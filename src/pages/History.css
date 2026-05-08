@@ -1,0 +1,221 @@
+.history-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.history-header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.history-toolbar {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--input-bg);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  width: 100%;
+  font-family: inherit;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th, .history-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.history-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.history-table tbody tr {
+  transition: var(--transition);
+}
+
+.history-table tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Status Select Styles */
+.status-select {
+  padding: 0.4rem 0.8rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  outline: none;
+  text-align: center;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.status-select option {
+  background-color: var(--bg-color); /* Fondo oscuro para las opciones */
+  color: var(--text-main); /* Texto blanco */
+  font-weight: 500;
+}
+
+.status-select.pendiente { background-color: var(--warning-bg); color: var(--warning-color); border-color: transparent; }
+.status-select.aprobado { background-color: rgba(46, 125, 50, 0.2); color: #81C784; border-color: transparent; }
+.status-select.realizado { background-color: var(--success-bg); color: var(--success-color); border-color: transparent; }
+.status-select.cancelado { background-color: rgba(231, 76, 60, 0.2); color: #E74C3C; border-color: transparent; }
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); /* Fondo un poco más oscuro */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(4px); /* Efecto cristalino moderno */
+}
+
+.modal-content {
+  background: var(--card-bg);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* Sombra más premium */
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05); /* Borde sutil */
+}
+
+.ticket-header {
+  border-bottom: 2px dashed var(--border-color);
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ticket-header p {
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.ticket-section {
+  margin-bottom: 1.5rem;
+}
+
+.ticket-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.ticket-table th, .ticket-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.ticket-table th {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ticket-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ticket-financials {
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.ticket-total {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* Reglas de Impresión para Exportar PDF */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 1rem;
+    box-shadow: none;
+    background: transparent;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ajustar colores para impresión por si usan papel blanco */
+  .ticket-financials {
+    background-color: transparent !important;
+    border: 1px solid #ccc;
+  }
+}

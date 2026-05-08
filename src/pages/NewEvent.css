@@ -1,0 +1,152 @@
+.new-event-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ne-header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.ne-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.ne-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ne-section {
+  padding: 1.5rem 2rem;
+}
+
+.section-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.section-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.insumos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.insumo-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background-color: var(--bg-color);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.insumo-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+}
+
+.insumo-label span {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.summary-sticky {
+  position: sticky;
+  top: 2rem;
+}
+
+.summary-list {
+  background-color: var(--input-bg);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+
+.summary-list h3 {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.summary-item span:last-child {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.summary-financials {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fin-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.margin-row {
+  color: var(--success-color);
+}
+
+.total-row {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px dashed var(--border-color);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.total-per-person {
+  font-size: 0.95rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  justify-content: flex-end;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .ne-grid {
+    grid-template-columns: 1fr;
+  }
+}

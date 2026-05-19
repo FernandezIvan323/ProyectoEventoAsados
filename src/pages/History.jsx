@@ -1,8 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Eye, Download, X, Printer, Flame } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Eye, Download, X, Printer, Flame, ChevronDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import './History.css';
+
+import { createPortal } from 'react-dom';
+
+const StatusDropdown = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const dropdownRef = useRef(null);
+
+  const options = ['Pendiente', 'Aprobado', 'Realizado', 'Cancelado'];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Si el click fue en el menu portal, no cerrar (el evento burbujea en React pero el target no estará en dropdownRef)
+      if (event.target.closest('.dropdown-menu-portal')) return;
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    
+    const handleScroll = (e) => {
+      // Solo cerramos si el scroll no es dentro del dropdown menu
+      if (!e.target.closest('.dropdown-menu-portal')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, []);
+
+  const toggleDropdown = () => {
+    if (!isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div className="custom-status-dropdown" ref={dropdownRef}>
+      <div 
+        className={`status-select ${value.toLowerCase()}`}
+        onClick={toggleDropdown}
+      >
+        <span>{value}</span>
+        <ChevronDown size={14} className={`dropdown-arrow ${isOpen ? 'open' : ''}`} />
+      </div>
+      
+      {isOpen && createPortal(
+        <div 
+          className="dropdown-menu-portal"
+          style={{ top: coords.top + 5, left: coords.left, width: coords.width }}
+        >
+          {options.map(option => (
+            <div 
+              key={option}
+              className={`dropdown-item ${value === option ? 'selected' : ''}`}
+              onClick={() => {
+                onChange(option);
+                setIsOpen(false);
+              }}
+            >
+              {option}
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
 
 export default function History() {
   const [events, setEvents] = useState([]);
@@ -89,16 +169,10 @@ export default function History() {
                       <td>{event.guests}</td>
                       <td><strong>${event.totalPrice?.toLocaleString('es-AR', {maximumFractionDigits: 0})}</strong></td>
                       <td>
-                        <select 
-                          className={`status-select ${event.status.toLowerCase()}`}
+                        <StatusDropdown 
                           value={event.status}
-                          onChange={(e) => handleStatusChange(event.id, e.target.value)}
-                        >
-                          <option value="Pendiente">Pendiente</option>
-                          <option value="Aprobado">Aprobado</option>
-                          <option value="Realizado">Realizado</option>
-                          <option value="Cancelado">Cancelado</option>
-                        </select>
+                          onChange={(newStatus) => handleStatusChange(event.id, newStatus)}
+                        />
                       </td>
                       <td style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn btn-secondary btn-sm" title="Ver Detalles" onClick={() => setSelectedEvent(event)}>

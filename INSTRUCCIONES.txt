@@ -1,0 +1,99 @@
+╔══════════════════════════════════════════════════════════╗
+║              ASAMAPP — Guía de instalación               ║
+║         Gestión profesional de eventos de asado          ║
+╚══════════════════════════════════════════════════════════╝
+
+REQUISITO ÚNICO
+───────────────
+Node.js 18 o superior (gratis)
+→ Descargalo en: https://nodejs.org  (elegí "LTS")
+
+Si ya lo tenés instalado, podés saltear este paso.
+
+
+INICIO RÁPIDO (recomendado)
+────────────────────────────
+1. Descomprimí el ZIP en cualquier carpeta de tu PC
+2. Hacé doble clic en:  INICIAR.bat
+3. La primera vez instala dependencias (puede tardar 1-2 min)
+4. El navegador se abre solo en http://localhost:5173
+5. ¡Listo para usar!
+
+Para cerrar la app: doble clic en DETENER.bat
+O simplemente cerrá las ventanas de terminal que se abrieron.
+
+
+INICIO MANUAL (si el .bat no funciona)
+───────────────────────────────────────
+Abrí DOS terminales y ejecutá:
+
+  Terminal 1 — Backend:
+    cd backend
+    npm install
+    npx prisma migrate deploy
+    npm run dev
+
+  Terminal 2 — Frontend:
+    cd frontend
+    npm install
+    npm run dev
+
+Luego abrí: http://localhost:5173
+
+
+PRIMERA VEZ
+───────────
+- La base de datos se crea automáticamente (archivo backend/prisma/dev.db)
+- No necesitás internet para usar la app (solo para la instalación inicial)
+- Tus datos quedan guardados en tu computadora
+
+
+FUNCIONALIDADES INCLUIDAS
+──────────────────────────
+✓ Cotizador de eventos con cálculo automático de precios
+✓ Historial de eventos con flujo de estados controlado
+✓ Registro de pagos y seguimiento de cobros
+✓ Inventario de insumos con control de stock
+✓ Gastos de mercado con comprobantes
+✓ Recetas y plantillas reutilizables
+✓ Lista de compras consolidada automática
+✓ Proveedores y agenda de contactos
+✓ Finanzas: cotizado vs gastado vs cobrado
+✓ Calendario mensual de eventos
+✓ Cotizador rápido sin crear evento
+✓ Gastos fijos del negocio
+✓ Alertas inteligentes en el dashboard
+✓ Historial de cambios de precio y estado
+✓ Exportar datos en JSON/CSV
+✓ Búsqueda global
+✓ Descarga de presupuesto en PDF
+✓ Notas y recordatorios
+
+
+PREGUNTAS FRECUENTES
+─────────────────────
+¿Mis datos están seguros?
+  Sí. Todo se guarda localmente en tu PC. Nada se envía a internet.
+
+¿Puedo usarlo en varios dispositivos?
+  Por ahora es una app local. Podés copiar la carpeta a otra PC.
+
+¿Cómo hago un respaldo?
+  Copiá el archivo: backend/prisma/dev.db
+  Ese archivo contiene toda tu base de datos.
+
+¿Funciona en Mac o Linux?
+  Sí, pero tenés que usar la instalación manual (los .bat son solo Windows).
+
+El navegador no se abre solo, ¿qué hago?
+  Abrí manualmente: http://localhost:5173
+
+
+SOPORTE
+────────
+¿Tenés algún problema? Escribinos:
+→ GitHub: https://github.com/FernandezIvan323/ProyectoEventoAsados
+
+──────────────────────────────────────────────────────────
+Versión 1.0 · Licencia ISC · Hecho con ❤️ para asadores
+──────────────────────────────────────────────────────────

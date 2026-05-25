@@ -913,8 +913,14 @@ app.get('/api/export', async (req, res) => {
 
 if (process.env.SERVE_FRONTEND === 'true') {
   const distPath = path.join(__dirname, '../frontend/dist');
-  app.use(express.static(distPath));
-  app.get(/^(?!\/api).*/, (_req, res) => {
+  const landingPath = path.join(__dirname, '../landing');
+
+  // Landing en /
+  app.use(express.static(landingPath));
+
+  // App React en /app
+  app.use('/app', express.static(distPath));
+  app.get(/^\/app(\/.*)?$/, (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

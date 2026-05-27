@@ -12,12 +12,16 @@ import {
   MapPin,
   Plus,
   Users,
+  Clock,
+  PartyPopper,
+  TrendingUp,
 } from 'lucide-react';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/PageTransition';
 import { useEvents } from '@/hooks/useEvents';
 import { getStatusVariant } from '@/lib/eventStatus';
 import { currency, getDashboardSummary, getEventRealFinancials } from '@/lib/finance';
@@ -84,25 +88,59 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Inicio</Badge>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Panel de control</h1>
-            <p className="mt-2 text-muted-foreground">Accesos rápidos a lo que necesitas hoy.</p>
+      <FadeIn>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground">Inicio</span>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-foreground font-bold">Panel de control</h1>
+              <p className="mt-2 text-muted-foreground">Accesos rápidos a lo que necesitas hoy.</p>
+            </div>
           </div>
+          <Button onClick={() => navigate('/new-event')} className="w-full sm:w-auto">
+            <Plus className="size-4" /> Nuevo presupuesto
+          </Button>
         </div>
-        <Button onClick={() => navigate('/new-event')} className="w-full sm:w-auto">
-          <Plus className="size-4" /> Nuevo presupuesto
-        </Button>
-      </div>
+      </FadeIn>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card><CardHeader className="pb-2"><CardDescription>Eventos</CardDescription><CardTitle className="text-2xl">{totalEvents}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Invitados</CardDescription><CardTitle className="text-2xl">{totalGuests}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Hoy</CardDescription><CardTitle className="text-2xl">{todayEvents.length}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Pendientes / cerrados</CardDescription><CardTitle className="text-2xl">{pendingEvents} / {closedEvents}</CardTitle></CardHeader></Card>
-      </div>
+      <StaggerContainer className="grid gap-4 md:grid-cols-4">
+        <StaggerItem>
+          <Card className="relative overflow-hidden">
+            <PartyPopper className="absolute right-4 top-4 size-8 text-primary/20" />
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-muted-foreground text-[11px]">Eventos</CardDescription>
+              <CardTitle className="text-4xl font-bold text-foreground text-[38px]">{totalEvents}</CardTitle>
+            </CardHeader>
+          </Card>
+        </StaggerItem>
+        <StaggerItem>
+          <Card className="relative overflow-hidden">
+            <Users className="absolute right-4 top-4 size-8 text-primary/20" />
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-muted-foreground text-[11px]">Invitados</CardDescription>
+              <CardTitle className="text-4xl font-bold text-foreground text-[38px]">{totalGuests}</CardTitle>
+            </CardHeader>
+          </Card>
+        </StaggerItem>
+        <StaggerItem>
+          <Card className="relative overflow-hidden">
+            <Clock className="absolute right-4 top-4 size-8 text-primary/20" />
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-muted-foreground text-[11px]">Hoy</CardDescription>
+              <CardTitle className="text-4xl font-bold text-foreground text-[38px]">{todayEvents.length}</CardTitle>
+            </CardHeader>
+          </Card>
+        </StaggerItem>
+        <StaggerItem>
+          <Card className="relative overflow-hidden">
+            <TrendingUp className="absolute right-4 top-4 size-8 text-primary/20" />
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs font-medium uppercase tracking-wider text-muted-foreground text-[11px]">Pendientes / cerrados</CardDescription>
+              <CardTitle className="text-4xl font-bold text-foreground text-[38px]">{pendingEvents} <span className="text-2xl text-muted-foreground">/</span> {closedEvents}</CardTitle>
+            </CardHeader>
+          </Card>
+        </StaggerItem>
+      </StaggerContainer>
 
       {alerts.length > 0 && (
         <Card className="border-amber-500/40 bg-amber-500/5">
@@ -190,7 +228,7 @@ export default function Dashboard() {
                     <li key={event.id}>
                       <Link to={`/history/${event.id}`} className="flex justify-between rounded-md border p-3 hover:bg-muted/50">
                         <span>{event.title}</span>
-                        <span className="font-semibold text-amber-400">${currency(r.pending)}</span>
+                        <span className="font-semibold text-primary">${currency(r.pending)}</span>
                       </Link>
                     </li>
                   );

@@ -16,6 +16,7 @@ import {
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { currency } from '@/lib/finance';
 import { getEvents } from '@/services/eventsApi';
 import { createMarketPurchase } from '@/services/marketPurchasesApi';
@@ -201,280 +202,310 @@ export default function NewMarketPurchase() {
     }
   };
 
+  const inputClass = 'w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
+
   return (
-    <div className="new-event-page">
-      <div className="ne-header">
-        <Button variant="ghost" onClick={() => navigate('/weekly-expenses')} className="mb-4">
-          <ArrowLeft className="size-4" />
-          Volver a gastos
-        </Button>
-        <div>
-          <Badge variant="outline" className="mb-3 border-primary/30 bg-primary/10 text-primary">
-            Nueva compra
-          </Badge>
-          <h1>Registrar Compra de Mercado</h1>
-          <p>Guarda productos, vendedor, contacto, metodo de pago y fotos de facturas.</p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Nueva compra</Badge>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Registrar Compra de Mercado</h1>
+          <p className="text-muted-foreground">Guarda productos, vendedor, contacto, metodo de pago y fotos de facturas.</p>
         </div>
+        <Button variant="ghost" onClick={() => navigate('/weekly-expenses')} className="w-full sm:w-auto">
+          <ArrowLeft className="size-4" />
+          Volver
+        </Button>
       </div>
 
       <div className="ne-grid">
-        <div className="ne-form-container">
-          <div className="card ne-section">
-            <h2 className="section-title"><Calendar size={20} /> Informacion general</h2>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Fecha y hora *</label>
-                <input
-                  type="datetime-local"
-                  className="form-input"
-                  value={form.purchasedAt}
-                  onChange={event => setForm({ ...form, purchasedAt: event.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Metodo de pago</label>
-                <select
-                  className="form-input"
-                  value={form.paymentMethod}
-                  onChange={event => setForm({ ...form, paymentMethod: event.target.value })}
-                >
-                  {PAYMENT_METHODS.map(method => (
-                    <option key={method} value={method}>{method}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Establecimiento / Tienda *</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Ej. Supermercado, Carniceria, Tienda local"
-                value={form.store}
-                onChange={event => setForm({ ...form, store: event.target.value })}
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Asociar a evento</label>
-                <select className="form-input" value={form.eventId} onChange={event => setForm({ ...form, eventId: event.target.value })}>
-                  <option value="">Gasto general</option>
-                  {events.map(event => (
-                    <option key={event.id} value={event.id}>{event.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Proveedor registrado</label>
-                <select className="form-input" value={form.providerId} onChange={event => setForm({ ...form, providerId: event.target.value })}>
-                  <option value="">Sin proveedor</option>
-                  {providers.map(provider => (
-                    <option key={provider.id} value={provider.id}>{provider.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="card ne-section">
-            <h2 className="section-title"><UserRound size={20} /> Datos del vendedor</h2>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Nombre del vendedor</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Nombre de quien vendio"
-                  value={form.vendorName}
-                  onChange={event => setForm({ ...form, vendorName: event.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Numero de celular</label>
-                <input
-                  type="tel"
-                  className="form-input"
-                  placeholder="Ej. 300 123 4567"
-                  value={form.vendorPhone}
-                  onChange={event => setForm({ ...form, vendorPhone: event.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="card ne-section">
-            <div className="section-header-flex">
-              <h2 className="section-title" style={{ borderBottom: 'none', padding: 0, margin: 0 }}>
-                <ReceiptText size={20} /> Productos / Items
-              </h2>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 rounded-md border border-border bg-background/50 p-4 md:grid-cols-12 md:items-end">
-                <div className="form-group mb-0 md:col-span-5">
-                  <label className="form-label">Producto</label>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calendar className="size-4.5 text-accent" />
+                Informacion general
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fecha y hora *</label>
                   <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Ej. Carne, arroz, verduras"
-                    value={productDraft.name}
-                    onChange={event => updateProductDraft('name', event.target.value)}
+                    type="datetime-local"
+                    className={inputClass}
+                    value={form.purchasedAt}
+                    onChange={event => setForm({ ...form, purchasedAt: event.target.value })}
                   />
                 </div>
-                <div className="form-group mb-0 md:col-span-2">
-                  <label className="form-label">Cantidad</label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    className="form-input"
-                    value={productDraft.quantity}
-                    onChange={event => updateProductDraft('quantity', event.target.value)}
-                  />
-                </div>
-                <div className="form-group mb-0 md:col-span-2">
-                  <label className="form-label">Unidad</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Metodo de pago</label>
                   <select
-                    className="form-input"
-                    value={productDraft.unit}
-                    onChange={event => updateProductDraft('unit', event.target.value)}
+                    className={inputClass + ' appearance-none'}
+                    value={form.paymentMethod}
+                    onChange={event => setForm({ ...form, paymentMethod: event.target.value })}
                   >
-                    {COMMON_UNITS.map(unit => (
-                      <option key={unit} value={unit}>{unit}</option>
+                    {PAYMENT_METHODS.map(method => (
+                      <option key={method} value={method}>{method}</option>
                     ))}
                   </select>
                 </div>
-                <div className="form-group mb-0 md:col-span-3">
-                  <label className="form-label">Precio unitario</label>
+              </div>
+              <div className="mt-4 space-y-1.5">
+                <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Establecimiento / Tienda *</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Ej. Supermercado, Carniceria, Tienda local"
+                  value={form.store}
+                  onChange={event => setForm({ ...form, store: event.target.value })}
+                />
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Asociar a evento</label>
+                  <select className={inputClass + ' appearance-none'} value={form.eventId} onChange={event => setForm({ ...form, eventId: event.target.value })}>
+                    <option value="">Gasto general</option>
+                    {events.map(event => (
+                      <option key={event.id} value={event.id}>{event.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Proveedor registrado</label>
+                  <select className={inputClass + ' appearance-none'} value={form.providerId} onChange={event => setForm({ ...form, providerId: event.target.value })}>
+                    <option value="">Sin proveedor</option>
+                    {providers.map(provider => (
+                      <option key={provider.id} value={provider.id}>{provider.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UserRound className="size-4.5 text-accent" />
+                Datos del vendedor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Nombre del vendedor</label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="form-input"
-                    value={productDraft.unitPrice}
-                    onChange={event => updateProductDraft('unitPrice', event.target.value)}
+                    type="text"
+                    className={inputClass}
+                    placeholder="Nombre de quien vendio"
+                    value={form.vendorName}
+                    onChange={event => setForm({ ...form, vendorName: event.target.value })}
                   />
                 </div>
-                <div className="flex justify-end md:col-span-12">
-                  <Button type="button" variant="outline" onClick={addItem}>
-                    <Plus className="size-4" />
-                    Agregar al resumen
-                  </Button>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Numero de celular</label>
+                  <input
+                    type="tel"
+                    className={inputClass}
+                    placeholder="Ej. 300 123 4567"
+                    value={form.vendorPhone}
+                    onChange={event => setForm({ ...form, vendorPhone: event.target.value })}
+                  />
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-            </div>
-          </div>
-
-          <div className="card ne-section">
-            <h2 className="section-title"><Camera size={20} /> Facturas y notas</h2>
-            <div className="form-group">
-              <label className="form-label">Fotos de facturas</label>
-              <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-background/50 p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
-                <Image className="mb-3 size-7 text-primary" />
-                <span className="text-sm font-semibold">Subir fotos de facturas</span>
-                <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imagenes por compra</span>
-                <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-              </label>
-            </div>
-
-            {form.receiptPhotos.length > 0 && (
-              <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {form.receiptPhotos.map((photo, index) => (
-                  <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-md border border-border bg-background">
-                    <img src={photo} alt={`Factura ${index + 1}`} className="h-32 w-full object-cover" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute right-2 top-2 size-8"
-                      onClick={() => removePhoto(index)}
-                      title="Quitar foto"
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ReceiptText className="size-4.5 text-accent" />
+                Productos / Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border border-border/60 bg-card p-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
+                  <div className="space-y-1.5 md:col-span-4">
+                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Producto</label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="Ej. Carne, arroz, verduras"
+                      value={productDraft.name}
+                      onChange={event => updateProductDraft('name', event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Cantidad</label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      className={inputClass}
+                      value={productDraft.quantity}
+                      onChange={event => updateProductDraft('quantity', event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Unidad</label>
+                    <select
+                      className={inputClass + ' appearance-none'}
+                      value={productDraft.unit}
+                      onChange={event => updateProductDraft('unit', event.target.value)}
                     >
-                      <Trash2 className="size-4" />
+                      {COMMON_UNITS.map(unit => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Precio unitario</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className={inputClass}
+                      value={productDraft.unitPrice}
+                      onChange={event => updateProductDraft('unitPrice', event.target.value)}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Button type="button" onClick={addItem} className="w-full">
+                      <Plus className="size-4" />
+                      Agregar
                     </Button>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+            </CardContent>
+          </Card>
 
-            <div className="form-group">
-              <label className="form-label">Notas u observaciones</label>
-              <textarea
-                className="form-input min-h-28 resize-y"
-                placeholder="Detalles opcionales de la compra"
-                value={form.notes}
-                onChange={event => setForm({ ...form, notes: event.target.value })}
-              />
-            </div>
-          </div>
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Camera className="size-4.5 text-accent" />
+                Facturas y notas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fotos de facturas</label>
+                <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
+                  <Image className="mb-3 size-7 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Subir fotos de facturas</span>
+                  <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imagenes por compra</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+                </label>
+              </div>
+
+              {form.receiptPhotos.length > 0 && (
+                <div className="mb-5 mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {form.receiptPhotos.map((photo, index) => (
+                    <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border border-border/60 bg-card">
+                      <img src={photo} alt={`Factura ${index + 1}`} className="h-32 w-full object-cover" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute right-2 top-2 size-8"
+                        onClick={() => removePhoto(index)}
+                        title="Quitar foto"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 space-y-1.5">
+                <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Notas u observaciones</label>
+                <textarea
+                  className={inputClass + ' min-h-28 resize-y'}
+                  placeholder="Detalles opcionales de la compra"
+                  value={form.notes}
+                  onChange={event => setForm({ ...form, notes: event.target.value })}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="ne-summary-container">
-          <div className="card summary-sticky">
-            <h2 className="section-title"><ReceiptText size={20} /> Resumen de compra</h2>
-            <div className="summary-list">
-              <h3>Productos registrados</h3>
-              {form.items.filter(item => item.name.trim()).length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                  Agrega productos a la izquierda para ver el resumen.
-                </p>
-              ) : (
-                form.items.filter(item => item.name.trim()).map(item => (
-                  <div key={item.localId} className="summary-item items-start gap-3">
-                    <span>
-                      <span className="block text-foreground">{item.name}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {item.quantity} {item.unit} x ${currency(item.unitPrice)}
-                      </span>
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span>${currency(itemSubtotal(item))}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        onClick={() => removeItem(item.localId)}
-                        title="Quitar producto"
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
+          <Card className="sticky top-6 space-y-4">
+            <CardHeader className="border-b border-border pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ReceiptText className="size-4.5 text-accent" />
+                Resumen de compra
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Productos registrados</p>
+                {form.items.filter(item => item.name.trim()).length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">
+                    Agrega productos a la izquierda para ver el resumen.
+                  </p>
+                ) : (
+                  form.items.filter(item => item.name.trim()).map(item => (
+                    <div key={item.localId} className="flex items-start justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-foreground truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.quantity} {item.unit} x ${currency(item.unitPrice)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-medium text-foreground">${currency(itemSubtotal(item))}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.localId)}
+                          className="shrink-0 rounded p-1 transition-colors hover:bg-destructive/20"
+                          title="Quitar producto"
+                        >
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-            <div className="summary-financials">
-              <div className="fin-row">
-                <span>Establecimiento:</span>
-                <span>{form.store || 'Sin definir'}</span>
+              <div className="space-y-2 border-t border-border pt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Establecimiento:</span>
+                  <span className="font-medium text-foreground">{form.store || 'Sin definir'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Vendedor:</span>
+                  <span className="font-medium text-foreground">{form.vendorName || 'Sin definir'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Facturas:</span>
+                  <span className="font-medium text-foreground">{form.receiptPhotos.length}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-dashed border-border pt-3">
+                  <span className="text-base font-semibold text-foreground">Total compra:</span>
+                  <span className="text-lg font-bold text-foreground">${currency(totalAmount)}</span>
+                </div>
               </div>
-              <div className="fin-row">
-                <span>Vendedor:</span>
-                <span>{form.vendorName || 'Sin definir'}</span>
-              </div>
-              <div className="fin-row">
-                <span>Facturas:</span>
-                <span>{form.receiptPhotos.length}</span>
-              </div>
-              <div className="fin-row total-row">
-                <span>Total compra:</span>
-                <span>${currency(totalAmount)}</span>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <button className="btn btn-primary btn-full" onClick={handleSave} disabled={isSaving} style={{ marginTop: '1.5rem' }}>
-                <Save size={18} /> {isSaving ? 'Guardando...' : 'Guardar compra'}
-              </button>
+              <Button
+                className="w-full"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                <Save className="size-4" /> {isSaving ? 'Guardando...' : 'Guardar compra'}
+              </Button>
               {saveError && (
-                <p style={{ fontSize: '0.85rem', textAlign: 'center', color: 'var(--destructive)' }}>
+                <p className="text-center text-sm text-destructive">
                   {saveError.message}
                 </p>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

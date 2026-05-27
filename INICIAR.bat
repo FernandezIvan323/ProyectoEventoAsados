@@ -52,5 +52,8 @@ echo  ==========================================
 echo.
 start http://localhost:5173
 
+echo  Landing: http://localhost:5173
+echo  App:     http://localhost:5173/app
+echo.
 echo  Para cerrar la app, cerra las ventanas de terminal.
 pause

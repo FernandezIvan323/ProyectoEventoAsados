@@ -7,7 +7,7 @@ import AuthGate from './components/AuthGate.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/app">
       <AuthGate>
         <App />
       </AuthGate>

@@ -685,32 +685,39 @@ app.delete('/api/market-purchases/:id', async (req, res) => {
 app.get('/api/notes', async (req, res) => {
   try {
     const notes = await prisma.note.findMany({ orderBy: { createdAt: 'desc' } });
-    res.json(notes);
+    res.json(notes.map(n => ({ ...n, tags: JSON.parse(n.tags) })));
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener notas');
   }
 });
 
 app.post('/api/notes', async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, tags } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'El título es requerido' });
   try {
-    const note = await prisma.note.create({ data: { title: title.trim(), content: content?.trim() || null } });
-    res.status(201).json(note);
+    const note = await prisma.note.create({
+      data: {
+        title: title.trim(),
+        content: content?.trim() || null,
+        tags: JSON.stringify(tags || []),
+      },
+    });
+    res.status(201).json({ ...note, tags: JSON.parse(note.tags) });
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear nota');
   }
 });
 
 app.patch('/api/notes/:id', async (req, res) => {
-  const { title, content, done } = req.body;
+  const { title, content, done, tags } = req.body;
   const data = {};
   if (title !== undefined) data.title = title.trim();
   if (content !== undefined) data.content = content?.trim() || null;
   if (done !== undefined) data.done = Boolean(done);
+  if (tags !== undefined) data.tags = JSON.stringify(tags);
   try {
     const note = await prisma.note.update({ where: { id: req.params.id }, data });
-    res.json(note);
+    res.json({ ...note, tags: JSON.parse(note.tags) });
   } catch (error) {
     handlePrismaError(res, error, 'Error al actualizar nota');
   }
@@ -864,7 +871,7 @@ app.get('/api/search', async (req, res) => {
       events: events.map(e => ({ id: e.id, title: e.title, client: e.client, status: e.status, date: e.date })),
       providers,
       inventory,
-      notes,
+      notes: notes.map(n => ({ ...n, tags: JSON.parse(n.tags) })),
       templates: templates.map(serializeQuoteTemplate),
     });
   } catch (error) {

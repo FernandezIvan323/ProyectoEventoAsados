@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { setStoredToken } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
-export default function Login() {
+export default function Login({ onAuthSuccess }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +24,7 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
       setStoredToken(data.token);
+      onAuthSuccess(data.token);
       navigate('/');
     } catch (err) {
       setError(err);

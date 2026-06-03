@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoadingState } from '@/components/feedback/ResourceState';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -9,9 +9,10 @@ import { apiRequest } from '@/lib/api';
 export default function AuthGate({ children }) {
   const [checked, setChecked] = useState(false);
   const [hasUsers, setHasUsers] = useState(false);
-  const token = getStoredToken();
+  const [token, setToken] = useState(getStoredToken());
 
   useEffect(() => {
+    if (token) return;
     apiRequest('/api/auth/config')
       .then(config => {
         setHasUsers(Boolean(config.hasUsers));
@@ -21,7 +22,15 @@ export default function AuthGate({ children }) {
         setHasUsers(false);
         setChecked(true);
       });
-  }, []);
+  }, [token]);
+
+  const handleAuth = (newToken) => {
+    setToken(newToken);
+  };
+
+  if (token) {
+    return children;
+  }
 
   if (!checked) {
     return (
@@ -31,14 +40,10 @@ export default function AuthGate({ children }) {
     );
   }
 
-  if (token) {
-    return children;
-  }
-
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login onAuthSuccess={handleAuth} />} />
+      <Route path="/register" element={<Register onAuthSuccess={handleAuth} />} />
       <Route path="*" element={<Navigate to={hasUsers ? '/login' : '/register'} replace />} />
     </Routes>
   );

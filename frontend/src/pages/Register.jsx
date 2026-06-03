@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { setStoredToken } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
-export default function Register() {
+export default function Register({ onAuthSuccess }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', username: '', password: '', confirm: '' });
   const [error, setError] = useState(null);
@@ -32,6 +32,7 @@ export default function Register() {
         body: JSON.stringify({ email: form.email, username: form.username, password: form.password }),
       });
       setStoredToken(data.token);
+      onAuthSuccess(data.token);
       navigate('/');
     } catch (err) {
       setError(err);

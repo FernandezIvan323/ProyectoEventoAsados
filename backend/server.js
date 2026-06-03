@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, handleAuthConfig, handleAuthLogin } from './auth.js';
+import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister } from './auth.js';
 import {
   validateCatalogPayload,
   validateEventPayload,
@@ -36,6 +36,7 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/auth/config', handleAuthConfig);
 app.post('/api/auth/login', handleAuthLogin);
+app.post('/api/auth/register', handleAuthRegister);
 app.use(authMiddleware);
 
 function sendValidationError(res, errors) {

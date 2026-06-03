@@ -1,18 +1,32 @@
 import crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function isAuthEnabled() {
-  return process.env.AUTH_ENABLED === 'true';
+  return true;
 }
 
 function getSecret() {
   return process.env.AUTH_SECRET || 'asamapp-dev-secret-change-me';
 }
 
-export function signToken(username) {
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
+function verifyPassword(password, stored) {
+  const [salt, key] = stored.split(':');
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return derivedKey.toString('hex') === key;
+}
+
+export function signToken(userId) {
   const issuedAt = Date.now();
-  const payload = `${username}:${issuedAt}`;
+  const payload = `${userId}:${issuedAt}`;
   const signature = crypto.createHmac('sha256', getSecret()).update(payload).digest('hex');
   return Buffer.from(`${payload}:${signature}`).toString('base64url');
 }
@@ -24,22 +38,22 @@ export function verifyToken(token) {
     if (parts.length < 3) return null;
     const signature = parts.pop();
     const issuedAt = Number(parts.pop());
-    const username = parts.join(':');
-    const payload = `${username}:${issuedAt}`;
+    const userId = parts.join(':');
+    const payload = `${userId}:${issuedAt}`;
     const expected = crypto.createHmac('sha256', getSecret()).update(payload).digest('hex');
     if (signature !== expected) return null;
     if (Date.now() - issuedAt > TOKEN_TTL_MS) return null;
-    return username;
+    return userId;
   } catch {
     return null;
   }
 }
 
-export function authMiddleware(req, res, next) {
+export async function authMiddleware(req, res, next) {
   if (!req.path.startsWith('/api')) return next();
   if (!isAuthEnabled()) return next();
 
-  const publicPaths = ['/api/health', '/api/auth/config', '/api/auth/login'];
+  const publicPaths = ['/api/health', '/api/auth/config', '/api/auth/login', '/api/auth/register'];
   if (publicPaths.includes(req.path)) return next();
 
   const header = req.headers.authorization || '';
@@ -51,23 +65,60 @@ export function authMiddleware(req, res, next) {
   return next();
 }
 
-export function handleAuthLogin(req, res) {
-  if (!isAuthEnabled()) {
-    return res.json({ enabled: false, token: null });
+export async function handleAuthRegister(req, res) {
+  try {
+    const { email, username, password } = req.body || {};
+    if (!email?.trim() || !username?.trim() || !password) {
+      return res.status(400).json({ error: 'Email, usuario y contraseña son requeridos' });
+    }
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    }
+
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email: email.trim() }, { username: username.trim() }] },
+    });
+    if (existing) {
+      const field = existing.email === email.trim() ? 'email' : 'usuario';
+      return res.status(409).json({ error: `Ese ${field} ya está registrado` });
+    }
+
+    const user = await prisma.user.create({
+      data: { email: email.trim(), username: username.trim(), password: hashPassword(password) },
+    });
+    const token = signToken(user.id);
+    res.status(201).json({ token, user: { id: user.id, email: user.email, username: user.username } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al registrar usuario' });
   }
-
-  const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
-  const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  const expectedUser = process.env.AUTH_USERNAME || 'admin';
-  const expectedPass = process.env.AUTH_PASSWORD || 'admin';
-
-  if (username !== expectedUser || password !== expectedPass) {
-    return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-  }
-
-  return res.json({ token: signToken(username), username });
 }
 
-export function handleAuthConfig(_req, res) {
-  res.json({ enabled: isAuthEnabled() });
+export async function handleAuthLogin(req, res) {
+  try {
+    const { username, password } = req.body || {};
+    if (!username?.trim() || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { username: username.trim() } });
+    if (!user || !verifyPassword(password, user.password)) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+
+    const token = signToken(user.id);
+    res.json({ token, user: { id: user.id, email: user.email, username: user.username } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+}
+
+export async function handleAuthConfig(_req, res) {
+  try {
+    const count = await prisma.user.count();
+    res.json({ enabled: true, hasUsers: count > 0 });
+  } catch {
+    res.json({ enabled: true, hasUsers: false });
+  }
 }

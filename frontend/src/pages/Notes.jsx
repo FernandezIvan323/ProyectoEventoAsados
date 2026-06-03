@@ -332,6 +332,7 @@ export default function Notes() {
   const [detailDraft, setDetailDraft] = useState(noteToDraft(null));
   const [savingQuick, setSavingQuick] = useState(false);
   const [savingDetail, setSavingDetail] = useState(false);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
   const load = useCallback(() => {
     setIsLoading(true);
@@ -624,7 +625,7 @@ export default function Notes() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <Card className="min-h-[620px] hover:translate-y-0">
+        <Card className={cn("min-h-[620px] hover:translate-y-0", mobileShowDetail && "hidden xl:block")}>
           <CardHeader className="gap-4 pt-6">
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-lg text-foreground">Bandeja</CardTitle>
@@ -689,7 +690,7 @@ export default function Notes() {
                   key={note.id}
                   note={note}
                   selected={selectedNote?.id === note.id}
-                  onSelect={setSelectedId}
+                  onSelect={(id) => { setSelectedId(id); setMobileShowDetail(true); }}
                   onToggleDone={handleToggleDone}
                   onPin={handlePin}
                   onPostpone={handlePostpone}
@@ -700,12 +701,19 @@ export default function Notes() {
           </CardContent>
         </Card>
 
-        <Card className="min-h-[620px] hover:translate-y-0 xl:sticky xl:top-6">
+        <Card className={cn("min-h-[620px] hover:translate-y-0 xl:sticky xl:top-6", !mobileShowDetail && "hidden xl:block")}>
           {selectedNote ? (
             <form onSubmit={handleSaveDetail} className="flex h-full flex-col">
               <CardHeader className="gap-4 pt-6">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setMobileShowDetail(false)}
+                      className="mb-2 flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground xl:hidden"
+                    >
+                      ← Volver a la bandeja
+                    </button>
                     <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
                       Detalle editable
                     </p>
@@ -851,6 +859,14 @@ export default function Notes() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Al elegir una nota de la bandeja, aqui podras editarla, fijarla, posponerla o marcarla como realizada.
                 </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 xl:hidden"
+                  onClick={() => setMobileShowDetail(false)}
+                >
+                  ← Volver a la bandeja
+                </Button>
               </div>
             </CardContent>
           )}

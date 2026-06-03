@@ -44,10 +44,11 @@ body {
 }
 .nav-logo { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
 .logo-icon {
-  display: inline-block;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--ember);
-  box-shadow: 0 0 8px rgba(232,131,74,0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(16,185,129,0.1);
 }
 .logo-text { font-size: 1.2rem; font-weight: 700; color: var(--warm-white); }
 .nav-links { display: flex; gap: 1.5rem; list-style: none; margin-left: auto; }

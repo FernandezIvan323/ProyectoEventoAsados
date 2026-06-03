@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, LineChart, ListChecks, PanelLeftClose, ShoppingCart, StickyNote, Store, Utensils, Zap } from 'lucide-react';
+import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, Flame, LineChart, ListChecks, PanelLeftClose, ShoppingCart, StickyNote, Store, Utensils, Zap } from 'lucide-react';
 
 import CommandPalette from '@/components/CommandPalette';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -88,8 +88,8 @@ export default function Layout() {
               "flex items-center border-b transition-all duration-300",
               collapsed ? "justify-center px-2 py-4" : "gap-3 px-5 py-5",
             )} style={{ borderColor: 'var(--border)' }}>
-              <span className="flex size-8 shrink-0 items-center justify-center text-xl" style={{ color: 'var(--primary)' }}>
-                🔥
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Flame className="size-5 text-primary" />
               </span>
               <AnimatePresence>
                 {!collapsed && (

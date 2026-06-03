@@ -1,6 +1,11 @@
 import { apiRequest } from '@/lib/api';
 
-export const getNotes = () => apiRequest('/api/notes');
+export const getNotes = (params = {}) => {
+  const query = new URLSearchParams(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  ).toString();
+  return apiRequest(`/api/notes${query ? `?${query}` : ''}`);
+};
 
 export const createNote = (data) =>
   apiRequest('/api/notes', { method: 'POST', body: JSON.stringify(data) });

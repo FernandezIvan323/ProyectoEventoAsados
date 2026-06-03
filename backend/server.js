@@ -682,42 +682,136 @@ app.delete('/api/market-purchases/:id', async (req, res) => {
 });
 
 // ── Notes ──────────────────────────────────────────────────────────────────
+const NOTE_PRIORITIES = ['Alta', 'Media', 'Baja'];
+const NOTE_TYPES = ['Recordatorio', 'Llamada', 'Cambio cliente', 'Compra', 'Idea', 'Problema'];
+const NOTE_LINKED_TYPES = ['event', 'provider', 'purchase', 'inventory', 'general'];
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map(tag => String(tag).trim()).filter(Boolean);
+}
+
+function parseNoteTags(tags) {
+  try {
+    const parsed = JSON.parse(tags || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function serializeNote(note) {
+  const status = note.status || (note.done ? 'Realizada' : 'Pendiente');
+  return {
+    ...note,
+    status,
+    done: status === 'Realizada',
+    priority: NOTE_PRIORITIES.includes(note.priority) ? note.priority : 'Media',
+    type: NOTE_TYPES.includes(note.type) ? note.type : 'Recordatorio',
+    linkedType: NOTE_LINKED_TYPES.includes(note.linkedType) ? note.linkedType : 'general',
+    tags: parseNoteTags(note.tags),
+  };
+}
+
+function getTodayString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function sortOperationalNotes(a, b) {
+  const today = getTodayString();
+  const priorityRank = { Alta: 0, Media: 1, Baja: 2 };
+  const aOverdue = a.dueDate && a.dueDate < today && a.status !== 'Realizada';
+  const bOverdue = b.dueDate && b.dueDate < today && b.status !== 'Realizada';
+  if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+  if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+  if ((priorityRank[a.priority] ?? 1) !== (priorityRank[b.priority] ?? 1)) {
+    return (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1);
+  }
+  if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+  if (a.dueDate && !b.dueDate) return -1;
+  if (!a.dueDate && b.dueDate) return 1;
+  return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+}
+
+function buildNoteData(payload, partial = false) {
+  const data = {};
+  const has = key => Object.prototype.hasOwnProperty.call(payload, key);
+
+  if (has('title')) data.title = String(payload.title || '').trim();
+  if (has('content')) data.content = payload.content ? String(payload.content).trim() : null;
+  if (has('tags')) data.tags = JSON.stringify(normalizeTags(payload.tags));
+  if (has('priority')) data.priority = NOTE_PRIORITIES.includes(payload.priority) ? payload.priority : 'Media';
+  if (has('type')) data.type = NOTE_TYPES.includes(payload.type) ? payload.type : 'Recordatorio';
+  if (has('dueDate')) data.dueDate = payload.dueDate ? String(payload.dueDate).slice(0, 10) : null;
+  if (has('pinned')) data.pinned = Boolean(payload.pinned);
+  if (has('linkedType')) data.linkedType = NOTE_LINKED_TYPES.includes(payload.linkedType) ? payload.linkedType : 'general';
+  if (has('linkedId')) data.linkedId = payload.linkedId ? String(payload.linkedId).trim() : null;
+
+  if (has('status')) {
+    data.status = payload.status === 'Realizada' ? 'Realizada' : 'Pendiente';
+    data.done = data.status === 'Realizada';
+  } else if (has('done')) {
+    data.done = Boolean(payload.done);
+    data.status = data.done ? 'Realizada' : 'Pendiente';
+  } else if (!partial) {
+    data.status = 'Pendiente';
+    data.done = false;
+  }
+
+  if (!partial) {
+    if (!has('priority')) data.priority = 'Media';
+    if (!has('type')) data.type = 'Recordatorio';
+    if (!has('pinned')) data.pinned = false;
+    if (!has('linkedType')) data.linkedType = 'general';
+    if (!has('tags')) data.tags = '[]';
+  }
+
+  return data;
+}
+
 app.get('/api/notes', async (req, res) => {
   try {
-    const notes = await prisma.note.findMany({ orderBy: { createdAt: 'desc' } });
-    res.json(notes.map(n => ({ ...n, tags: JSON.parse(n.tags) })));
+    const { status, priority, type, linkedType, due } = req.query;
+    const today = getTodayString();
+    const where = {};
+
+    if (status) where.status = status === 'Realizada' ? 'Realizada' : 'Pendiente';
+    if (priority && NOTE_PRIORITIES.includes(priority)) where.priority = priority;
+    if (type && NOTE_TYPES.includes(type)) where.type = type;
+    if (linkedType && NOTE_LINKED_TYPES.includes(linkedType)) where.linkedType = linkedType;
+    if (due === 'today') where.dueDate = today;
+    if (due === 'overdue') {
+      where.dueDate = { lt: today };
+      where.status = 'Pendiente';
+    }
+
+    const notes = await prisma.note.findMany({ where, orderBy: { updatedAt: 'desc' } });
+    res.json(notes.map(serializeNote).sort(sortOperationalNotes));
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener notas');
   }
 });
 
 app.post('/api/notes', async (req, res) => {
-  const { title, content, tags } = req.body;
-  if (!title?.trim()) return res.status(400).json({ error: 'El título es requerido' });
+  if (!req.body.title?.trim()) return res.status(400).json({ error: 'El título es requerido' });
   try {
     const note = await prisma.note.create({
-      data: {
-        title: title.trim(),
-        content: content?.trim() || null,
-        tags: JSON.stringify(tags || []),
-      },
+      data: buildNoteData(req.body),
     });
-    res.status(201).json({ ...note, tags: JSON.parse(note.tags) });
+    res.status(201).json(serializeNote(note));
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear nota');
   }
 });
 
 app.patch('/api/notes/:id', async (req, res) => {
-  const { title, content, done, tags } = req.body;
-  const data = {};
-  if (title !== undefined) data.title = title.trim();
-  if (content !== undefined) data.content = content?.trim() || null;
-  if (done !== undefined) data.done = Boolean(done);
-  if (tags !== undefined) data.tags = JSON.stringify(tags);
+  const data = buildNoteData(req.body, true);
+  if (data.title !== undefined && !data.title) {
+    return res.status(400).json({ error: 'El título es requerido' });
+  }
   try {
     const note = await prisma.note.update({ where: { id: req.params.id }, data });
-    res.json({ ...note, tags: JSON.parse(note.tags) });
+    res.json(serializeNote(note));
   } catch (error) {
     handlePrismaError(res, error, 'Error al actualizar nota');
   }
@@ -871,7 +965,7 @@ app.get('/api/search', async (req, res) => {
       events: events.map(e => ({ id: e.id, title: e.title, client: e.client, status: e.status, date: e.date })),
       providers,
       inventory,
-      notes: notes.map(n => ({ ...n, tags: JSON.parse(n.tags) })),
+      notes: notes.map(serializeNote),
       templates: templates.map(serializeQuoteTemplate),
     });
   } catch (error) {

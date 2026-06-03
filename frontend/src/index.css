@@ -66,7 +66,7 @@
   --secondary-color: #1E293B;
   --card-bg: var(--surface);
   --border-color: var(--border);
-  --input-bg: var(--surface2);
+  --input-bg: #1E293B;
   --hover-bg: rgba(16, 185, 129, 0.05);
   --success-color: #10B981;
   --warning-color: #F59E0B;
@@ -322,16 +322,19 @@ input[type="date"],
 input[type="time"],
 input[type="datetime-local"],
 input[type="tel"],
+input[type="email"],
+input[type="password"],
 select,
 textarea,
 .form-input,
-[data-slot="input"] {
-  background-color: #080C16 !important; /* Elegant deep dark slate, darker than card */
-  border: 1px solid rgba(148, 163, 184, 0.28) !important; /* Visible slate border for great contrast */
-  color: #F8FAFC !important; /* Crisp white-blue text */
-  border-radius: 0.5rem !important; /* Smooth rounded corners matching --radius */
+[data-slot="input"],
+[data-slot="textarea"] {
+  background-color: #1E293B !important;
+  border: 1px solid rgba(148, 163, 184, 0.34) !important;
+  color: #F8FAFC !important;
+  border-radius: 0.5rem !important;
   font-size: 0.875rem !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4) !important; /* Premium inner shadow for depth and recessed look */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 1px 2px rgba(0, 0, 0, 0.18) !important;
   transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
@@ -341,11 +344,14 @@ input[type="date"]::placeholder,
 input[type="time"]::placeholder,
 input[type="datetime-local"]::placeholder,
 input[type="tel"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
 textarea::placeholder,
 .form-input::placeholder,
-[data-slot="input"]::placeholder {
-  color: #64748B !important; /* Elegant slate-gray placeholder */
-  opacity: 0.8 !important;
+[data-slot="input"]::placeholder,
+[data-slot="textarea"]::placeholder {
+  color: #CBD5E1 !important;
+  opacity: 0.62 !important;
 }
 
 input[type="text"]:hover,
@@ -354,12 +360,15 @@ input[type="date"]:hover,
 input[type="time"]:hover,
 input[type="datetime-local"]:hover,
 input[type="tel"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
 select:hover,
 textarea:hover,
 .form-input:hover,
-[data-slot="input"]:hover {
-  border-color: rgba(148, 163, 184, 0.45) !important; /* Brighter slate border on hover */
-  background-color: #0B101D !important; /* Slightly lighter slate-blue on hover */
+[data-slot="input"]:hover,
+[data-slot="textarea"]:hover {
+  border-color: rgba(203, 213, 225, 0.48) !important;
+  background-color: #26344A !important;
 }
 
 input[type="text"]:focus,
@@ -368,13 +377,16 @@ input[type="date"]:focus,
 input[type="time"]:focus,
 input[type="datetime-local"]:focus,
 input[type="tel"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
 select:focus,
 textarea:focus,
 .form-input:focus,
-[data-slot="input"]:focus {
-  border-color: #10B981 !important; /* Vibrant emerald green border on focus */
-  background-color: #0E1526 !important; /* Focused slate background */
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(16, 185, 129, 0.25) !important; /* Beautiful glowing emerald ring */
+[data-slot="input"]:focus,
+[data-slot="textarea"]:focus {
+  border-color: #10B981 !important;
+  background-color: #243349 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 3px rgba(16, 185, 129, 0.22) !important;
   outline: none !important;
 }
 

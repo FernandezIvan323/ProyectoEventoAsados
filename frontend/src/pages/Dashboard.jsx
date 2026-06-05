@@ -21,6 +21,7 @@ import {
   Wallet,
   StickyNote,
   AlertOctagon,
+  ShoppingCart,
 } from 'lucide-react';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
@@ -79,6 +80,14 @@ export default function Dashboard() {
       .slice(0, 6),
     [events],
   );
+
+  const pendingActionEvents = useMemo(() => {
+    const actionableStatuses = ['Pendiente', 'Cotizado', 'Compras pendientes', 'Aprobado'];
+    return events
+      .filter(e => actionableStatuses.includes(e.status) && e.date)
+      .sort((a, b) => parseISO(a.date) - parseISO(b.date))
+      .slice(0, 5);
+  }, [events]);
 
   const alerts = useMemo(() => {
     const today = new Date();
@@ -309,6 +318,84 @@ export default function Dashboard() {
           </div>
         </div>
       </FadeIn>
+
+      {/* ── Pending Action Events ── */}
+      {pendingActionEvents.length > 0 && (
+        <FadeIn delay={0.12}>
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Eventos que necesitan tu atencion</h2>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="space-y-2">
+                  {pendingActionEvents.map(event => {
+                    const dateObj = parseISO(event.date);
+                    const daysUntil = differenceInDays(dateObj, new Date());
+                    const isUrgent = daysUntil >= 0 && daysUntil <= 3;
+                    return (
+                      <div
+                        key={event.id}
+                        className={`group flex flex-col gap-3 rounded-xl border p-3 transition-all sm:flex-row sm:items-center sm:gap-4 ${
+                          isUrgent
+                            ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50'
+                            : 'border-border/40 hover:border-primary/30 hover:bg-primary/5'
+                        }`}
+                      >
+                        <div className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border ${
+                          isUrgent ? 'border-amber-500/40 bg-amber-500/10' : 'border-border/60 bg-secondary/40'
+                        }`}>
+                          <span className={`text-lg font-bold ${isUrgent ? 'text-amber-300' : 'text-foreground'}`}>
+                            {format(dateObj, 'dd', { locale: es })}
+                          </span>
+                          <span className="text-[9px] uppercase text-muted-foreground">
+                            {format(dateObj, 'MMM', { locale: es })}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="truncate text-sm font-semibold text-foreground">{event.title}</h3>
+                            <Badge variant={getStatusVariant(event.status)} className="shrink-0 text-[10px]">{event.status}</Badge>
+                          </div>
+                          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                              <Users className="size-3" /> {event.guests || 0}
+                            </span>
+                            {event.location && (
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="size-3" /> {event.location}
+                              </span>
+                            )}
+                            {daysUntil >= 0 && (
+                              <span className={isUrgent ? 'text-amber-300' : 'text-muted-foreground/60'}>
+                                en {daysUntil === 0 ? 'hoy' : `${daysUntil} dia${daysUntil !== 1 ? 's' : ''}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+                          {event.status === 'Compras pendientes' && (
+                            <Button
+                              size="sm"
+                              onClick={() => navigate('/weekly-expenses/new', { state: { purchaseDraft: { eventId: event.id } } })}
+                              className="w-full sm:w-auto"
+                            >
+                              <ShoppingCart className="size-3.5" /> Agregar compra
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
+                            <Link to={`/history/${event.id}`}>
+                              <ArrowRight className="size-3.5" /> Ver detalle
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </FadeIn>
+      )}
 
       {/* ── Main Content ── */}
       <div className="grid gap-6 lg:grid-cols-5">

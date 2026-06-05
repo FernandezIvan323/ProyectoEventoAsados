@@ -9,6 +9,7 @@ import {
   ReceiptText,
   Save,
   Trash2,
+  X,
 } from 'lucide-react';
 
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';
@@ -40,6 +41,18 @@ function createBlankItem() {
   };
 }
 
+function createBlankPurchase() {
+  return {
+    localId: crypto.randomUUID(),
+    store: '',
+    providerId: '',
+    paymentMethod: 'Efectivo',
+    notes: '',
+    receiptPhotos: [],
+    items: [],
+  };
+}
+
 function itemSubtotal(item) {
   return Number(item.quantity || 0) * Number(item.unitPrice || 0);
 }
@@ -53,6 +66,191 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }) {
+  const [productDraft, setProductDraft] = useState(createBlankItem);
+  const [blockError, setBlockError] = useState(null);
+
+  const totalAmount = useMemo(
+    () => purchase.items.reduce((sum, item) => sum + itemSubtotal(item), 0),
+    [purchase.items],
+  );
+
+  const updateField = (field, value) => {
+    onChange({ ...purchase, [field]: value });
+  };
+
+  const addItem = () => {
+    if (!productDraft.name.trim() || Number(productDraft.quantity) <= 0) {
+      setBlockError('Ingresa el nombre del producto y una cantidad mayor a cero.');
+      return;
+    }
+    setBlockError(null);
+    onChange({ ...purchase, items: [...purchase.items, { ...productDraft, localId: crypto.randomUUID() }] });
+    setProductDraft(createBlankItem());
+  };
+
+  const removeItem = (localId) => {
+    onChange({ ...purchase, items: purchase.items.filter(item => item.localId !== localId) });
+  };
+
+  const handlePhotoUpload = async (event) => {
+    const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
+    if (!files.length) return;
+    try {
+      const remainingSlots = Math.max(0, 6 - purchase.receiptPhotos.length);
+      const selectedFiles = files.slice(0, remainingSlots);
+      const photos = await Promise.all(selectedFiles.map(readFileAsDataUrl));
+      onChange({ ...purchase, receiptPhotos: [...purchase.receiptPhotos, ...photos] });
+    } catch {
+      setBlockError('No se pudieron leer una o mas imagenes de la factura.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const removePhoto = (index) => {
+    onChange({ ...purchase, receiptPhotos: purchase.receiptPhotos.filter((_, i) => i !== index) });
+  };
+
+  const inputClass = 'w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ReceiptText className="size-4.5 text-accent" />
+          Compra #{index + 1} <span className="text-muted-foreground font-normal text-sm">de {total}</span>
+        </CardTitle>
+        {total > 1 && (
+          <Button variant="ghost" size="icon" onClick={onRemove} className="text-destructive hover:text-destructive" title="Quitar compra">
+            <X className="size-4" />
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4 pt-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Establecimiento / Tienda *</label>
+            <input
+              type="text"
+              className={inputClass}
+              placeholder="Ej. Supermercado, Carniceria"
+              value={purchase.store}
+              onChange={e => updateField('store', e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Proveedor registrado</label>
+            <select className={inputClass + ' appearance-none'} value={purchase.providerId} onChange={e => updateField('providerId', e.target.value)}>
+              <option value="">Sin proveedor</option>
+              {providers.map(provider => (
+                <option key={provider.id} value={provider.id}>{provider.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 border-t border-border/40 pt-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Metodo de pago</label>
+            <select className={inputClass + ' appearance-none'} value={purchase.paymentMethod} onChange={e => updateField('paymentMethod', e.target.value)}>
+              {PAYMENT_METHODS.map(method => (
+                <option key={method} value={method}>{method}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="border-t border-border/40 pt-4 space-y-3">
+          <h4 className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Productos</h4>
+          <div className="rounded-xl border border-border/60 bg-black/20 p-4 shadow-inner">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
+              <div className="space-y-1.5 md:col-span-4">
+                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Producto</label>
+                <input type="text" className={inputClass} placeholder="Ej. Carne" value={productDraft.name} onChange={e => setProductDraft({ ...productDraft, name: e.target.value })} />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Cantidad</label>
+                <input type="number" min="0.01" step="0.01" className={inputClass} value={productDraft.quantity} onChange={e => setProductDraft({ ...productDraft, quantity: e.target.value })} />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Unidad</label>
+                <select className={inputClass + ' appearance-none'} value={productDraft.unit} onChange={e => setProductDraft({ ...productDraft, unit: e.target.value })}>
+                  {COMMON_UNITS.map(unit => (<option key={unit} value={unit}>{unit}</option>))}
+                </select>
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Precio unit.</label>
+                <input type="number" min="0" step="0.01" className={inputClass} value={productDraft.unitPrice} onChange={e => setProductDraft({ ...productDraft, unitPrice: e.target.value })} />
+              </div>
+              <div className="md:col-span-2">
+                <Button type="button" onClick={addItem} className="w-full" size="sm">
+                  <Plus className="size-4" /> Agregar
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {purchase.items.length > 0 && (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {purchase.items.map(item => (
+                <div key={item.localId} className="flex items-center justify-between gap-3 bg-black/25 border border-border/60 rounded-xl px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.quantity} {item.unit} x ${currency(item.unitPrice)}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-bold text-foreground">${currency(itemSubtotal(item))}</span>
+                    <button type="button" onClick={() => removeItem(item.localId)} className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-destructive/20 text-destructive/80 hover:text-destructive" title="Quitar producto">
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-border/40 pt-4 space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Notas</label>
+            <textarea className={inputClass + ' min-h-20 resize-y'} placeholder="Opcional" value={purchase.notes} onChange={e => updateField('notes', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="border-t border-border/40 pt-4 space-y-3">
+          <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fotos de facturas</label>
+          <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary p-4 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
+            <Image className="mb-2 size-6 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Subir fotos</span>
+            <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imagenes</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+          </label>
+          {purchase.receiptPhotos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {purchase.receiptPhotos.map((photo, photoIndex) => (
+                <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border border-border/60 bg-card">
+                  <img src={photo} alt={`Factura ${photoIndex + 1}`} className="h-24 w-full object-cover" />
+                  <Button type="button" variant="destructive" size="icon" className="absolute right-1 top-1 size-7" onClick={() => removePhoto(photoIndex)} title="Quitar foto">
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-dashed border-border pt-3">
+          <span className="text-sm font-semibold text-muted-foreground">Subtotal compra #{index + 1}</span>
+          <span className="text-lg font-bold text-foreground">${currency(totalAmount)}</span>
+        </div>
+
+        {blockError && <p className="text-sm text-destructive">{blockError}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function NewMarketPurchase() {
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -63,17 +261,10 @@ export default function NewMarketPurchase() {
   const [isSaving, setIsSaving] = useState(false);
   const [events, setEvents] = useState([]);
   const [providers, setProviders] = useState([]);
-  const [form, setForm] = useState({
+  const [session, setSession] = useState({
     purchasedAt: toDatetimeInputValue(),
-    store: '',
-    vendorName: '',
-    vendorPhone: '',
     eventId: '',
-    providerId: '',
-    paymentMethod: 'Efectivo',
-    notes: '',
-    receiptPhotos: [],
-    items: [],
+    purchases: [createBlankPurchase()],
   });
 
   useEffect(() => {
@@ -84,25 +275,51 @@ export default function NewMarketPurchase() {
   useEffect(() => {
     const draft = routerLocation.state?.purchaseDraft;
     if (!draft) return;
-    setForm(prev => ({
-      ...prev,
-      eventId: draft.eventId || prev.eventId,
-      notes: draft.notes || prev.notes,
-      items: (draft.items || []).map(item => ({
-        localId: crypto.randomUUID(),
-        name: item.name || '',
-        quantity: String(item.quantity ?? '1'),
-        unit: item.unit || 'unidad',
-        unitPrice: item.unitPrice != null ? String(item.unitPrice) : '',
-      })),
-    }));
+    setSession(prev => {
+      const next = { ...prev };
+      if (draft.eventId) next.eventId = draft.eventId;
+      if (draft.items?.length) {
+        next.purchases = [{
+          ...createBlankPurchase(),
+          items: draft.items.map(item => ({
+            localId: crypto.randomUUID(),
+            name: item.name || '',
+            quantity: String(item.quantity ?? '1'),
+            unit: item.unit || 'unidad',
+            unitPrice: item.unitPrice != null ? String(item.unitPrice) : '',
+          })),
+          notes: draft.notes || '',
+        }];
+      }
+      return next;
+    });
   }, [routerLocation.state]);
-  const [productDraft, setProductDraft] = useState(createBlankItem);
 
-  const totalAmount = useMemo(
-    () => form.items.reduce((total, item) => total + itemSubtotal(item), 0),
-    [form.items],
+  const grandTotal = useMemo(
+    () => session.purchases.reduce((sum, p) => sum + p.items.reduce((s, i) => s + itemSubtotal(i), 0), 0),
+    [session.purchases],
   );
+
+  const updatePurchase = (index, updated) => {
+    setSession(prev => ({
+      ...prev,
+      purchases: prev.purchases.map((p, i) => (i === index ? updated : p)),
+    }));
+  };
+
+  const addPurchaseBlock = () => {
+    setSession(prev => ({
+      ...prev,
+      purchases: [...prev.purchases, createBlankPurchase()],
+    }));
+  };
+
+  const removePurchaseBlock = (index) => {
+    setSession(prev => ({
+      ...prev,
+      purchases: prev.purchases.filter((_, i) => i !== index),
+    }));
+  };
 
   const triggerAlert = (title, description) => {
     setAlertTitle(title);
@@ -110,105 +327,63 @@ export default function NewMarketPurchase() {
     setAlertOpen(true);
   };
 
-  const updateProductDraft = (field, value) => {
-    setProductDraft(current => ({ ...current, [field]: value }));
-  };
-
-  const addItem = () => {
-    if (!productDraft.name.trim() || Number(productDraft.quantity) <= 0) {
-      triggerAlert('Producto incompleto', 'Ingresa el nombre del producto y una cantidad mayor a cero.');
-      return;
-    }
-
-    setForm(current => ({
-      ...current,
-      items: [...current.items, { ...productDraft, localId: crypto.randomUUID() }],
-    }));
-    setProductDraft(createBlankItem());
-  };
-
-  const removeItem = (localId) => {
-    setForm(current => ({
-      ...current,
-      items: current.items.filter(item => item.localId !== localId),
-    }));
-  };
-
-  const handlePhotoUpload = async (event) => {
-    const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
-    if (!files.length) return;
-
-    try {
-      const remainingSlots = Math.max(0, 6 - form.receiptPhotos.length);
-      const selectedFiles = files.slice(0, remainingSlots);
-      const photos = await Promise.all(selectedFiles.map(readFileAsDataUrl));
-      setForm(current => ({ ...current, receiptPhotos: [...current.receiptPhotos, ...photos] }));
-    } catch {
-      triggerAlert('Error al cargar fotos', 'No se pudieron leer una o mas imagenes de la factura.');
-    } finally {
-      event.target.value = '';
-    }
-  };
-
-  const removePhoto = (index) => {
-    setForm(current => ({
-      ...current,
-      receiptPhotos: current.receiptPhotos.filter((_, currentIndex) => currentIndex !== index),
-    }));
-  };
-
   const handleSave = async () => {
-    if (!form.store.trim()) {
-      triggerAlert('Informacion requerida', 'Ingresa el establecimiento o tienda de la compra.');
+    if (session.purchases.length === 0) {
+      triggerAlert('Sin compras', 'Agrega al menos una compra para guardar.');
       return;
     }
-
-    const validItems = form.items.filter(item => item.name.trim() && Number(item.quantity) > 0);
-    if (!validItems.length) {
-      triggerAlert('Productos requeridos', 'Agrega al menos un producto con nombre y cantidad.');
-      return;
+    for (let i = 0; i < session.purchases.length; i++) {
+      const p = session.purchases[i];
+      if (!p.store.trim()) {
+        triggerAlert('Informacion requerida', `Ingresa el establecimiento de la compra #${i + 1}.`);
+        return;
+      }
+      const validItems = p.items.filter(item => item.name.trim() && Number(item.quantity) > 0);
+      if (validItems.length === 0) {
+        triggerAlert('Productos requeridos', `Agrega al menos un producto a la compra #${i + 1}.`);
+        return;
+      }
     }
 
-    const payload = {
-      purchasedAt: new Date(form.purchasedAt).toISOString(),
-      store: form.store,
-      vendorName: form.vendorName,
-      vendorPhone: form.vendorPhone,
-      eventId: form.eventId || null,
-      providerId: form.providerId || null,
-      paymentMethod: form.paymentMethod,
-      notes: form.notes,
-      receiptPhotos: form.receiptPhotos,
-      items: validItems.map(({ name, quantity, unit, unitPrice }) => ({
-        name,
-        quantity: Number(quantity),
-        unit,
-        unitPrice: Number(unitPrice || 0),
-      })),
-    };
-
+    setIsSaving(true);
+    setSaveError(null);
     try {
-      setIsSaving(true);
-      setSaveError(null);
-      await createMarketPurchase(payload);
+      for (let i = 0; i < session.purchases.length; i++) {
+        const p = session.purchases[i];
+        const validItems = p.items.filter(item => item.name.trim() && Number(item.quantity) > 0);
+        const payload = {
+          purchasedAt: new Date(session.purchasedAt).toISOString(),
+          store: p.store,
+          eventId: session.eventId || null,
+          providerId: p.providerId || null,
+          paymentMethod: p.paymentMethod,
+          notes: p.notes,
+          receiptPhotos: p.receiptPhotos,
+          items: validItems.map(({ name, quantity, unit, unitPrice }) => ({
+            name,
+            quantity: Number(quantity),
+            unit,
+            unitPrice: Number(unitPrice || 0),
+          })),
+        };
+        await createMarketPurchase(payload);
+      }
       navigate('/weekly-expenses');
     } catch (err) {
       setSaveError(err);
-      triggerAlert('Error de guardado', 'Hubo un error al guardar la compra. Revisa los datos e intenta de nuevo.');
+      triggerAlert('Error de guardado', 'Hubo un error al guardar las compras. Revisa los datos e intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }
   };
-
-  const inputClass = 'w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Nueva compra</Badge>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Registrar Compra de Mercado</h1>
-          <p className="text-muted-foreground">Guarda productos, vendedor, contacto, método de pago y fotos de facturas.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Registrar Compras de Mercado</h1>
+          <p className="text-muted-foreground">Carga varias compras a distintos proveedores en una sola sesion.</p>
         </div>
         <Button variant="ghost" onClick={() => navigate('/weekly-expenses')} className="w-full sm:w-auto">
           <ArrowLeft className="size-4" />
@@ -218,12 +393,11 @@ export default function NewMarketPurchase() {
 
       <div className="ne-grid">
         <div className="space-y-4">
-          {/* Tarjeta Unificada: Información de la Compra */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Calendar className="size-4.5 text-accent" />
-                Información de la Compra
+                Sesion de compras
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -232,39 +406,18 @@ export default function NewMarketPurchase() {
                   <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fecha y hora *</label>
                   <input
                     type="datetime-local"
-                    className={inputClass}
-                    value={form.purchasedAt}
-                    onChange={event => setForm({ ...form, purchasedAt: event.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Método de pago</label>
-                  <select
-                    className={inputClass + ' appearance-none'}
-                    value={form.paymentMethod}
-                    onChange={event => setForm({ ...form, paymentMethod: event.target.value })}
-                  >
-                    {PAYMENT_METHODS.map(method => (
-                      <option key={method} value={method}>{method}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Establecimiento / Tienda *</label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="Ej. Supermercado, Carnicería, Tienda local"
-                    value={form.store}
-                    onChange={event => setForm({ ...form, store: event.target.value })}
+                    className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    value={session.purchasedAt}
+                    onChange={e => setSession({ ...session, purchasedAt: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Asociar a evento</label>
-                  <select className={inputClass + ' appearance-none'} value={form.eventId} onChange={event => setForm({ ...form, eventId: event.target.value })}>
+                  <select
+                    className="w-full appearance-none rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    value={session.eventId}
+                    onChange={e => setSession({ ...session, eventId: e.target.value })}
+                  >
                     <option value="">Gasto general</option>
                     {events.map(event => (
                       <option key={event.id} value={event.id}>{event.title}</option>
@@ -272,247 +425,54 @@ export default function NewMarketPurchase() {
                   </select>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-border/40 pt-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Proveedor registrado</label>
-                  <select className={inputClass + ' appearance-none'} value={form.providerId} onChange={event => setForm({ ...form, providerId: event.target.value })}>
-                    <option value="">Sin proveedor</option>
-                    {providers.map(provider => (
-                      <option key={provider.id} value={provider.id}>{provider.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Nombre del vendedor</label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="Nombre de quien vendió"
-                    value={form.vendorName}
-                    onChange={event => setForm({ ...form, vendorName: event.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Celular del vendedor</label>
-                  <input
-                    type="tel"
-                    className={inputClass}
-                    placeholder="Ej. 300 123 4567"
-                    value={form.vendorPhone}
-                    onChange={event => setForm({ ...form, vendorPhone: event.target.value })}
-                  />
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Tarjeta de Productos / Items */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ReceiptText className="size-4.5 text-accent" />
-                Productos / Items
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-xl border border-border/60 bg-black/20 p-5 shadow-inner">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
-                  <div className="space-y-1.5 md:col-span-4">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Producto</label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      placeholder="Ej. Carne, arroz, verduras"
-                      value={productDraft.name}
-                      onChange={event => updateProductDraft('name', event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Cantidad</label>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      className={inputClass}
-                      value={productDraft.quantity}
-                      onChange={event => updateProductDraft('quantity', event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Unidad</label>
-                    <select
-                      className={inputClass + ' appearance-none'}
-                      value={productDraft.unit}
-                      onChange={event => updateProductDraft('unit', event.target.value)}
-                    >
-                      {COMMON_UNITS.map(unit => (
-                        <option key={unit} value={unit}>{unit}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Precio unitario</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className={inputClass}
-                      value={productDraft.unitPrice}
-                      onChange={event => updateProductDraft('unitPrice', event.target.value)}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Button type="button" onClick={addItem} className="w-full">
-                      <Plus className="size-4" />
-                      Agregar
-                    </Button>
-                  </div>
-                </div>
-              </div>
+          {session.purchases.map((purchase, index) => (
+            <PurchaseBlock
+              key={purchase.localId}
+              purchase={purchase}
+              providers={providers}
+              index={index}
+              total={session.purchases.length}
+              onChange={(updated) => updatePurchase(index, updated)}
+              onRemove={() => removePurchaseBlock(index)}
+            />
+          ))}
 
-              {/* Lista Interactiva de Productos dentro del Formulario */}
-              {form.items.length > 0 && (
-                <div className="border-t border-border/40 pt-4">
-                  <h4 className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase mb-3">Productos añadidos en esta compra</h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {form.items.map(item => (
-                      <div key={item.localId} className="flex items-center justify-between gap-3 bg-black/25 border border-border/60 rounded-xl px-4 py-3 hover:bg-black/35 transition-colors">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.quantity} {item.unit} × ${currency(item.unitPrice)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-sm font-bold text-foreground">${currency(itemSubtotal(item))}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.localId)}
-                            className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-destructive/20 text-destructive/80 hover:text-destructive"
-                            title="Quitar producto"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Tarjeta de Facturas y Notas */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Camera className="size-4.5 text-accent" />
-                Facturas y notas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fotos de facturas</label>
-                <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
-                  <Image className="mb-3 size-7 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Subir fotos de facturas</span>
-                  <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imágenes por compra</span>
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-                </label>
-              </div>
-
-              {form.receiptPhotos.length > 0 && (
-                <div className="mb-5 mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {form.receiptPhotos.map((photo, index) => (
-                    <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border border-border/60 bg-card">
-                      <img src={photo} alt={`Factura ${index + 1}`} className="h-32 w-full object-cover" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute right-2 top-2 size-8"
-                        onClick={() => removePhoto(index)}
-                        title="Quitar foto"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-4 space-y-1.5">
-                <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Notas u observaciones</label>
-                <textarea
-                  className={inputClass + ' min-h-28 resize-y'}
-                  placeholder="Detalles opcionales de la compra"
-                  value={form.notes}
-                  onChange={event => setForm({ ...form, notes: event.target.value })}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <Button variant="outline" onClick={addPurchaseBlock} className="w-full">
+            <Plus className="size-4" /> Agregar otra compra
+          </Button>
         </div>
 
-        {/* Panel de Resumen Lateral */}
         <div className="ne-summary-container">
           <Card className="sticky top-6 space-y-4">
             <CardHeader className="border-b border-border pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <ReceiptText className="size-4.5 text-accent" />
-                Resumen de compra
+                Resumen de sesion
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Productos registrados</p>
-                {form.items.filter(item => item.name.trim()).length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">
-                    Agrega productos a la izquierda para ver el resumen.
-                  </p>
-                ) : (
-                  form.items.filter(item => item.name.trim()).map(item => (
-                    <div key={item.localId} className="flex items-start justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 py-2">
+                <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Compras ({session.purchases.length})</p>
+                {session.purchases.map((p, i) => {
+                  const sub = p.items.reduce((s, it) => s + itemSubtotal(it), 0);
+                  return (
+                    <div key={p.localId} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 py-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.quantity} {item.unit} x ${currency(item.unitPrice)}
-                        </p>
+                        <p className="text-sm text-foreground truncate">#{i + 1} {p.store || 'Sin tienda'}</p>
+                        <p className="text-xs text-muted-foreground">{p.items.length} producto{p.items.length !== 1 ? 's' : ''}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm font-medium text-foreground">${currency(itemSubtotal(item))}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.localId)}
-                          className="shrink-0 rounded p-1 transition-colors hover:bg-destructive/20"
-                          title="Quitar producto"
-                        >
-                          <Trash2 className="size-3.5 text-destructive" />
-                        </button>
-                      </div>
+                      <span className="text-sm font-medium text-foreground">${currency(sub)}</span>
                     </div>
-                  ))
-                )}
+                  );
+                })}
               </div>
 
-              <div className="space-y-2 border-t border-border pt-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Establecimiento:</span>
-                  <span className="font-medium text-foreground">{form.store || 'Sin definir'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Vendedor:</span>
-                  <span className="font-medium text-foreground">{form.vendorName || 'Sin definir'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Facturas:</span>
-                  <span className="font-medium text-foreground">{form.receiptPhotos.length}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-dashed border-border pt-3">
-                  <span className="text-base font-semibold text-foreground">Total compra:</span>
-                  <span className="text-lg font-bold text-foreground">${currency(totalAmount)}</span>
-                </div>
+              <div className="flex items-center justify-between border-t border-dashed border-border pt-3">
+                <span className="text-base font-semibold text-foreground">Total sesion</span>
+                <span className="text-lg font-bold text-foreground">${currency(grandTotal)}</span>
               </div>
 
               <Button
@@ -520,7 +480,7 @@ export default function NewMarketPurchase() {
                 onClick={handleSave}
                 disabled={isSaving}
               >
-                <Save className="size-4" /> {isSaving ? 'Guardando...' : 'Guardar compra'}
+                <Save className="size-4" /> {isSaving ? 'Guardando...' : `Guardar ${session.purchases.length} compra${session.purchases.length !== 1 ? 's' : ''}`}
               </Button>
               {saveError && (
                 <p className="text-center text-sm text-destructive">
@@ -542,4 +502,3 @@ export default function NewMarketPurchase() {
     </div>
   );
 }
-

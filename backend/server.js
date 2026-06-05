@@ -596,8 +596,9 @@ app.get('/api/operations/summary', async (req, res) => {
       prisma.note.findMany({ where: { archived: false } }),
     ]);
 
-    const totalRevenue = events.reduce((total, event) => total + Number(event.totalPrice || 0), 0);
-    const totalPaid = events.reduce((total, event) => total + Number(event.amountPaid || 0), 0);
+    const billableEvents = events.filter(event => !['Cobrado', 'Cancelado'].includes(event.status));
+    const totalRevenue = billableEvents.reduce((total, event) => total + Number(event.totalPrice || 0), 0);
+    const totalPaid = billableEvents.reduce((total, event) => total + Number(event.amountPaid || 0), 0);
     const actualCosts = purchases.reduce((total, purchase) => total + Number(purchase.totalAmount || 0), 0);
     const lowStock = inventory.filter(item => Number(item.stock || 0) <= Number(item.minStock || 0));
     const openTasks = events.flatMap(event => event.tasks.map(task => ({ ...task, eventTitle: event.title, eventId: event.id }))).filter(task => !task.done);

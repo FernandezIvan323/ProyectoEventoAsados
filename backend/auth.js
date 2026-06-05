@@ -120,11 +120,6 @@ export async function handleAuthRegister(req, res) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
     }
 
-    const userCount = await prisma.user.count();
-    if (userCount > 0) {
-      return res.status(403).json({ error: 'El registro esta deshabilitado. Pedile a un administrador que cree tu cuenta.' });
-    }
-
     const existing = await prisma.user.findFirst({
       where: { OR: [{ email: email.trim() }, { username: username.trim() }] },
     });
@@ -134,7 +129,7 @@ export async function handleAuthRegister(req, res) {
     }
 
     const user = await prisma.user.create({
-      data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role: 'admin' },
+      data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role: 'user' },
     });
     const token = signToken(user.id);
     res.status(201).json({ token, user: { id: user.id, email: user.email, username: user.username, role: user.role } });

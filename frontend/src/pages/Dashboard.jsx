@@ -20,6 +20,8 @@ import {
   CircleAlert,
   CircleCheck,
   Wallet,
+  StickyNote,
+  AlertOctagon,
 } from 'lucide-react';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
@@ -39,11 +41,9 @@ function getGreeting() {
   return 'Buenas noches';
 }
 
-function getGreetingIcon() {
-  const h = new Date().getHours();
-  if (h < 12) return '☀️';
-  if (h < 19) return '🌤';
-  return '🌙';
+function getUserName() {
+  const user = JSON.parse(localStorage.getItem('asamapp_user') || 'null');
+  return user?.username || 'Usuario';
 }
 
 export default function Dashboard() {
@@ -112,7 +112,7 @@ export default function Dashboard() {
               {format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             </div>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              {getGreeting()} <span className="inline-block">{getGreetingIcon()}</span>
+              {getGreeting()}, <span className="text-primary">{getUserName()}</span>
             </h1>
             <p className="mt-1 text-muted-foreground">
               {totalEvents === 0
@@ -126,6 +126,45 @@ export default function Dashboard() {
           </Button>
         </div>
       </FadeIn>
+
+      {/* ── Note Alerts ── */}
+      {ops?.noteAlerts && (ops.noteAlerts.overdue > 0 || ops.noteAlerts.today > 0 || ops.noteAlerts.pending > 0) && (
+        <FadeIn delay={0.04}>
+          <button
+            type="button"
+            onClick={() => navigate('/notes')}
+            className="group flex w-full items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-left transition-all hover:border-primary/50 hover:bg-primary/10"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+              <StickyNote className="size-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-primary">
+                {ops.noteAlerts.pending} nota{ops.noteAlerts.pending !== 1 ? 's' : ''} pendiente{ops.noteAlerts.pending !== 1 ? 's' : ''}
+              </p>
+              <p className="truncate text-xs text-primary/70">
+                {ops.noteAlerts.overdue > 0 && `${ops.noteAlerts.overdue} vencida${ops.noteAlerts.overdue > 1 ? 's' : ''}`}
+                {ops.noteAlerts.overdue > 0 && ops.noteAlerts.today > 0 && ' · '}
+                {ops.noteAlerts.today > 0 && `${ops.noteAlerts.today} para hoy`}
+                {ops.noteAlerts.overdue === 0 && ops.noteAlerts.today === 0 && 'Revisá la bandeja de notas'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {ops.noteAlerts.overdue > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-destructive/15 px-2.5 py-1.5 text-xs font-bold text-red-300">
+                  <AlertOctagon className="size-3" /> {ops.noteAlerts.overdue}
+                </span>
+              )}
+              {ops.noteAlerts.today > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-primary/15 px-2.5 py-1.5 text-xs font-bold text-primary">
+                  <Clock className="size-3" /> {ops.noteAlerts.today}
+                </span>
+              )}
+              <ArrowRight className="size-4 shrink-0 text-primary/40 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+          </button>
+        </FadeIn>
+      )}
 
       {/* ── Alert Banner ── */}
       {alerts.length > 0 && (

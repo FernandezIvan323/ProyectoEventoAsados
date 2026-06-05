@@ -12,8 +12,13 @@ model User {
   email     String   @unique
   username  String   @unique
   password  String
+  role      String   @default("viewer") // admin | editor | viewer
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  events    Event[]  @relation("EventOwner")
+  notes     Note[]   @relation("NoteOwner")
 }
 
 model Event {
@@ -34,11 +39,15 @@ model Event {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  ownerId      String?
+  owner        User?    @relation("EventOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
   insumos      Insumo[]
   tasks        EventTask[]
   payments     EventPayment[]
   purchases    MarketPurchase[]
   changelog    EventChangeLog[]
+  photos       EventPhoto[]
 }
 
 model Insumo {
@@ -158,20 +167,38 @@ model StockMovement {
 }
 
 model Note {
-  id         String   @id @default(uuid())
-  title      String
-  content    String?
-  status     String   @default("Pendiente")
-  priority   String   @default("Media")
-  type       String   @default("Recordatorio")
-  dueDate    String?
-  pinned     Boolean  @default(false)
-  linkedType String   @default("general")
-  linkedId   String?
-  tags       String   @default("[]")
-  done       Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  title              String
+  content            String?
+  status             String   @default("Pendiente")
+  priority           String   @default("Media")
+  type               String   @default("Recordatorio")
+  dueDate            String?
+  pinned             Boolean  @default(false)
+  linkedType         String   @default("general")
+  linkedId           String?
+  tags               String   @default("[]")
+  done               Boolean  @default(false)
+  archived           Boolean  @default(false)
+  recurrence         String   @default("none")
+  recurrenceParentId String?
+
+  ownerId            String?
+  owner              User?    @relation("NoteOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  changelog          NoteChangeLog[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model NoteChangeLog {
+  id        String   @id @default(uuid())
+  field     String
+  oldValue  String?
+  newValue  String?
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model QuoteTemplate {
@@ -209,4 +236,17 @@ model FixedCost {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model EventPhoto {
+  id        String   @id @default(uuid())
+  filename  String
+  mimeType  String
+  data      String   // base64
+  size      Int
+  caption   String?
+  createdAt DateTime @default(now())
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }

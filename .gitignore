@@ -5,3 +5,10 @@ dev.db
 dev.db-journal
 .vite/
 *.log
+backups/
+logs/
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+.nyc_output/

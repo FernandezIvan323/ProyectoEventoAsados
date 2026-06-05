@@ -1,0 +1,604 @@
+openapi: 3.0.3
+info:
+  title: AsamApp API
+  description: |
+    API REST para gestion de eventos gastronomicos: cotizaciones, inventario,
+    compras, finanzas, notas y operaciones. Backend Node.js + Express + Prisma + SQLite.
+  version: 1.0.0
+  contact:
+    name: ProyectoAsado
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3000
+    description: Desarrollo local
+
+tags:
+  - name: auth
+    description: Autenticacion y usuarios
+  - name: events
+    description: Eventos gastronomicos
+  - name: inventory
+    description: Catalogo de insumos y stock
+  - name: providers
+    description: Proveedores
+  - name: purchases
+    description: Compras de mercado
+  - name: recipes
+    description: Recetas y combos
+  - name: templates
+    description: Plantillas de cotizacion
+  - name: notes
+    description: Bloc de notas
+  - name: finance
+    description: Finanzas y metricas
+  - name: operations
+    description: Resumen operativo y alertas
+  - name: search
+    description: Busqueda global
+  - name: export
+    description: Exportacion de datos
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        client: { type: string, nullable: true }
+        date: { type: string, nullable: true, example: '2026-12-01' }
+        time: { type: string, nullable: true, example: '20:00' }
+        location: { type: string, nullable: true }
+        guests: { type: integer }
+        status:
+          type: string
+          enum: [Cotizado, Pendiente, Aprobado, Compras pendientes, En preparacion, Realizado, Cobrado, Cancelado]
+        menuNotes: { type: string, nullable: true }
+        recipeName: { type: string, nullable: true }
+        extraCosts: { type: number }
+        profitMargin: { type: number }
+        totalPrice: { type: number }
+        amountPaid: { type: number }
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        username: { type: string }
+        role:
+          type: string
+          enum: [admin, editor, viewer]
+        active: { type: boolean }
+    Alert:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [event_unconfirmed, payment_overdue, low_stock, note_due, note_overdue, task_pending]
+        severity:
+          type: string
+          enum: [info, warn, error]
+        title: { type: string }
+        message: { type: string }
+        link: { type: string }
+        eventId: { type: string, nullable: true }
+        noteId: { type: string, nullable: true }
+        catalogItemId: { type: string, nullable: true }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      tags: [auth]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  version: { type: string }
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesion
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login exitoso
+        '401':
+          description: Credenciales invalidas
+
+  /api/auth/register:
+    post:
+      tags: [auth]
+      summary: Registrar primer usuario (solo si no hay usuarios)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, username, password]
+              properties:
+                email: { type: string }
+                username: { type: string }
+                password: { type: string, minLength: 4 }
+      responses:
+        '201':
+          description: Usuario creado como admin
+        '403':
+          description: Registro deshabilitado
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Usuario actual
+      responses:
+        '200':
+          description: Datos del usuario autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+
+  /api/events:
+    get:
+      tags: [events]
+      summary: Listar eventos
+      responses:
+        '200':
+          description: Lista de eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Event' }
+    post:
+      tags: [events]
+      summary: Crear evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Event' }
+      responses:
+        '201':
+          description: Evento creado
+
+  /api/events/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [events]
+      summary: Obtener evento por ID
+      responses:
+        '200':
+          description: Evento
+        '404':
+          description: No encontrado
+    put:
+      tags: [events]
+      summary: Actualizar evento completo o solo estado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Event' }
+      responses:
+        '200':
+          description: Evento actualizado
+    delete:
+      tags: [events]
+      summary: Eliminar evento
+      responses:
+        '204':
+          description: Eliminado
+
+  /api/events/{id}/duplicate:
+    post:
+      tags: [events]
+      summary: Duplicar evento
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Evento duplicado
+
+  /api/events/{id}/financials:
+    get:
+      tags: [events]
+      summary: Resumen financiero del evento
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: cotizado, gastado, cobrado, ganancia
+
+  /api/events/{id}/payments:
+    post:
+      tags: [events]
+      summary: Registrar pago
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, paymentMethod]
+              properties:
+                amount: { type: number }
+                paymentMethod:
+                  type: string
+                  enum: [Efectivo, Tarjeta, Transferencia, Otro]
+                notes: { type: string }
+      responses:
+        '201':
+          description: Pago registrado
+
+  /api/events/{id}/photos:
+    get:
+      tags: [events]
+      summary: Listar fotos del evento
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lista de fotos (sin data)
+    post:
+      tags: [events]
+      summary: Subir foto al evento
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filename, mimeType, data]
+              properties:
+                filename: { type: string }
+                mimeType:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp, image/gif]
+                data: { type: string, description: base64 }
+                caption: { type: string }
+      responses:
+        '201':
+          description: Foto subida
+
+  /api/inventory:
+    get:
+      tags: [inventory]
+      summary: Listar catalogo de insumos
+      responses:
+        '200':
+          description: Lista de items
+    post:
+      tags: [inventory]
+      summary: Crear item de inventario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, unit, price]
+              properties:
+                name: { type: string }
+                unit: { type: string }
+                price: { type: number }
+                stock: { type: number }
+                minStock: { type: number }
+      responses:
+        '201':
+          description: Item creado
+
+  /api/inventory/{id}/stock-movements:
+    get:
+      tags: [inventory]
+      summary: Movimientos de stock del item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lista de movimientos
+    post:
+      tags: [inventory]
+      summary: Registrar movimiento de stock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, quantity]
+              properties:
+                type:
+                  type: string
+                  enum: [Entrada, Salida, Ajuste]
+                quantity: { type: number }
+                notes: { type: string }
+      responses:
+        '201':
+          description: Movimiento registrado
+
+  /api/providers:
+    get:
+      tags: [providers]
+      summary: Listar proveedores
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [providers]
+      summary: Crear proveedor
+      responses:
+        '201':
+          description: Proveedor creado
+
+  /api/market-purchases:
+    get:
+      tags: [purchases]
+      summary: Listar compras de mercado
+      parameters:
+        - name: start
+          in: query
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [purchases]
+      summary: Registrar compra
+      responses:
+        '201':
+          description: Compra registrada
+
+  /api/recipes:
+    get:
+      tags: [recipes]
+      summary: Listar recetas
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [recipes]
+      summary: Crear receta
+      responses:
+        '201':
+          description: Receta creada
+
+  /api/quote-templates:
+    get:
+      tags: [templates]
+      summary: Listar plantillas de cotizacion
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [templates]
+      summary: Crear plantilla
+      responses:
+        '201':
+          description: Plantilla creada
+
+  /api/notes:
+    get:
+      tags: [notes]
+      summary: Listar notas (con filtros opcionales)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [Pendiente, Realizada] }
+        - name: priority
+          in: query
+          schema: { type: string, enum: [Alta, Media, Baja] }
+        - name: archived
+          in: query
+          schema: { type: string, enum: ['true', 'false', 'all'] }
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [notes]
+      summary: Crear nota
+      responses:
+        '201':
+          description: Nota creada
+
+  /api/notes/{id}:
+    patch:
+      tags: [notes]
+      summary: Actualizar nota
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Nota actualizada
+    delete:
+      tags: [notes]
+      summary: Eliminar nota
+      responses:
+        '204':
+          description: Eliminada
+
+  /api/fixed-costs:
+    get:
+      tags: [finance]
+      summary: Listar gastos fijos
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [finance]
+      summary: Crear gasto fijo
+      responses:
+        '201':
+          description: Gasto creado
+
+  /api/operations/summary:
+    get:
+      tags: [operations]
+      summary: Resumen operativo global
+      responses:
+        '200':
+          description: totalEvents, activeEvents, totalRevenue, totalPaid, pendingRevenue, actualCosts, realProfit, lowStock, openTasks, noteAlerts
+
+  /api/alerts:
+    get:
+      tags: [operations]
+      summary: Alertas activas del sistema
+      responses:
+        '200':
+          description: Lista de alertas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  generatedAt: { type: string, format: date-time }
+                  alerts:
+                    type: array
+                    items: { $ref: '#/components/schemas/Alert' }
+
+  /api/shopping-list:
+    get:
+      tags: [events]
+      summary: Lista de compras consolidada
+      parameters:
+        - name: statuses
+          in: query
+          schema: { type: string, example: 'Aprobado,Compras pendientes' }
+      responses:
+        '200':
+          description: Lista consolidada
+
+  /api/search:
+    get:
+      tags: [search]
+      summary: Busqueda global full-text
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        '200':
+          description: Resultados agrupados por tipo
+
+  /api/export:
+    get:
+      tags: [export]
+      summary: Exportar datos
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, csv], default: json }
+        - name: type
+          in: query
+          schema: { type: string, enum: [all, events, purchases], default: all }
+      responses:
+        '200':
+          description: Archivo descargable
+
+  /api/users:
+    get:
+      tags: [auth]
+      summary: Listar usuarios (admin)
+      responses:
+        '200':
+          description: Lista de usuarios
+    post:
+      tags: [auth]
+      summary: Crear usuario (admin)
+      responses:
+        '201':
+          description: Usuario creado
+
+  /api/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      tags: [auth]
+      summary: Cambiar rol o activar/desactivar (admin)
+      responses:
+        '200':
+          description: Usuario actualizado
+    delete:
+      tags: [auth]
+      summary: Eliminar usuario (admin)
+      responses:
+        '204':
+          description: Eliminado

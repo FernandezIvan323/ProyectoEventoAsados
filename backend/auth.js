@@ -4,8 +4,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+export { prisma };
+
 export function isAuthEnabled() {
-  return true;
+  return process.env.AUTH_ENABLED !== 'false';
 }
 
 function getSecret() {
@@ -61,7 +63,21 @@ export async function authMiddleware(req, res, next) {
   if (!token || !verifyToken(token)) {
     return res.status(401).json({ error: 'No autorizado. Inicia sesion.' });
   }
-  req.user = verifyToken(token);
+  const userId = verifyToken(token);
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, email: true, role: true, active: true },
+    });
+    if (!user || !user.active) {
+      return res.status(401).json({ error: 'Usuario inactivo o inexistente' });
+    }
+    req.user = user;
+  } catch {
+    return res.status(500).json({ error: 'Error al validar sesion' });
+  }
+
   return next();
 }
 
@@ -75,6 +91,11 @@ export async function handleAuthRegister(req, res) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
     }
 
+    const userCount = await prisma.user.count();
+    if (userCount > 0) {
+      return res.status(403).json({ error: 'El registro esta deshabilitado. Pedile a un administrador que cree tu cuenta.' });
+    }
+
     const existing = await prisma.user.findFirst({
       where: { OR: [{ email: email.trim() }, { username: username.trim() }] },
     });
@@ -84,10 +105,10 @@ export async function handleAuthRegister(req, res) {
     }
 
     const user = await prisma.user.create({
-      data: { email: email.trim(), username: username.trim(), password: hashPassword(password) },
+      data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role: 'admin' },
     });
     const token = signToken(user.id);
-    res.status(201).json({ token, user: { id: user.id, email: user.email, username: user.username } });
+    res.status(201).json({ token, user: { id: user.id, email: user.email, username: user.username, role: user.role } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al registrar usuario' });
@@ -102,16 +123,21 @@ export async function handleAuthLogin(req, res) {
     }
 
     const user = await prisma.user.findUnique({ where: { username: username.trim() } });
-    if (!user || !verifyPassword(password, user.password)) {
+    if (!user || !user.active || !verifyPassword(password, user.password)) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
     const token = signToken(user.id);
-    res.json({ token, user: { id: user.id, email: user.email, username: user.username } });
+    res.json({ token, user: { id: user.id, email: user.email, username: user.username, role: user.role } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
+}
+
+export async function handleAuthMe(req, res) {
+  if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+  res.json({ user: req.user });
 }
 
 export async function handleAuthConfig(_req, res) {

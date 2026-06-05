@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "AsamApp",
+    "tagline": "Manage your catering events like a pro"
+  },
+  "nav": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "history": "History",
+    "quickQuote": "Quick quote",
+    "templates": "Templates",
+    "inventory": "Inventory",
+    "recipes": "Recipes",
+    "providers": "Providers",
+    "weeklyExpenses": "Market expenses",
+    "shoppingList": "Shopping list",
+    "operations": "Operations",
+    "finance": "Finance",
+    "fixedCosts": "Fixed costs",
+    "notes": "Notes",
+    "export": "Export",
+    "openApp": "Open app",
+    "logout": "Log out"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "back": "Back",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "date": "Date",
+    "notes": "Notes",
+    "status": "Status"
+  },
+  "auth": {
+    "login": "Sign in",
+    "register": "Sign up",
+    "logout": "Log out",
+    "username": "Username",
+    "password": "Password",
+    "email": "Email",
+    "invalidCredentials": "Invalid username or password",
+    "sessionExpired": "Your session expired. Please sign in again."
+  },
+  "event": {
+    "new": "New event",
+    "edit": "Edit event",
+    "title": "Title",
+    "client": "Client",
+    "guests": "Guests",
+    "location": "Location",
+    "time": "Time",
+    "extraCosts": "Extra costs",
+    "profitMargin": "Profit margin",
+    "totalPrice": "Total price",
+    "amountPaid": "Deposit / Payment",
+    "menu": "Menu",
+    "status": {
+      "label": "Status",
+      "Cotizado": "Quoted",
+      "Pendiente": "Pending",
+      "Aprobado": "Approved",
+      "Compras pendientes": "Shopping pending",
+      "En preparacion": "In preparation",
+      "Realizado": "Done",
+      "Cobrado": "Collected",
+      "Cancelado": "Cancelled"
+    }
+  },
+  "finance": {
+    "revenue": "Revenue",
+    "costs": "Costs",
+    "profit": "Profit",
+    "pending": "Pending",
+    "rentabilidad": "Profitability"
+  },
+  "inventory": {
+    "item": "Item",
+    "stock": "Stock",
+    "minStock": "Min stock",
+    "price": "Price",
+    "lowStock": "Low stock"
+  },
+  "validation": {
+    "required": "This field is required",
+    "positive": "Must be a number greater than or equal to 0"
+  }
+}

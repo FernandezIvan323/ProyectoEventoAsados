@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
@@ -17,10 +19,12 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.40.0",
     "html2canvas": "^1.4.1",
+    "i18next": "^26.3.1",
     "jspdf": "^2.5.2",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^7.15.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.6.0",

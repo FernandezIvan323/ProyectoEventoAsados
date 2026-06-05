@@ -60,6 +60,10 @@ export default defineConfig({
     host: true,
     watch: {
       usePolling: true,
+      ignored: ['**/OneDrive/**', '**/Documents/**', '**/node_modules/.vite/**'],
     },
+  },
+  optimizeDeps: {
+    entries: ['./index.html'],
   },
 })

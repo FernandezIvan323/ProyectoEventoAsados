@@ -3,10 +3,13 @@ import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Com
 
 import CommandPalette from '@/components/CommandPalette';
 import GlobalSearch from '@/components/GlobalSearch';
+import NotificationsBell from '@/components/NotificationsBell';
+import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { clearStoredToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -58,6 +61,7 @@ export default function Layout() {
   const [authEnabled, setAuthEnabled] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     apiRequest('/api/auth/config').then(c => setAuthEnabled(c.enabled)).catch(() => {});
@@ -74,9 +78,11 @@ export default function Layout() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = () => setShowLogoutConfirm(true);
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
     clearStoredToken();
-    window.location.reload();
+    window.location.href = '/app/login';
   };
 
   return (
@@ -190,9 +196,23 @@ export default function Layout() {
         </aside>
 
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+        <ConfirmDialog
+          isOpen={showLogoutConfirm}
+          title="Cerrar sesión"
+          description="¿Estás seguro de que querés cerrar sesión? Vas a necesitar volver a iniciar sesión para acceder al sistema."
+          confirmText="Cerrar sesión"
+          cancelText="Cancelar"
+          variant="warning"
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
 
         <main className="min-w-0 p-4 sm:p-6 lg:p-8 bg-background">
           <div className="mx-auto w-full max-w-7xl">
+            <div className="mb-4 flex items-center justify-end gap-2">
+              <LocaleSwitcher />
+              <NotificationsBell />
+            </div>
             <GlobalSearch />
             <Outlet />
           </div>

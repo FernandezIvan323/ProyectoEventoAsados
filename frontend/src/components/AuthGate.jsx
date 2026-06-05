@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LoadingState } from '@/components/feedback/ResourceState';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
-import { getStoredToken } from '@/lib/auth';
+import { clearStoredToken, getStoredToken } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
 export default function AuthGate({ children }) {
+  const location = useLocation();
+  const isAuthPath = location.pathname === '/login' || location.pathname === '/register';
   const [checked, setChecked] = useState(false);
   const [hasUsers, setHasUsers] = useState(false);
-  const [token, setToken] = useState(getStoredToken());
+  const [token, setToken] = useState(isAuthPath ? null : getStoredToken());
 
   useEffect(() => {
-    if (token) return;
+    if (isAuthPath) {
+      clearStoredToken();
+      setChecked(true);
+      return;
+    }
     apiRequest('/api/auth/config')
       .then(config => {
         setHasUsers(Boolean(config.hasUsers));
@@ -22,7 +28,7 @@ export default function AuthGate({ children }) {
         setHasUsers(false);
         setChecked(true);
       });
-  }, [token]);
+  }, [isAuthPath]);
 
   const handleAuth = (newToken) => {
     setToken(newToken);

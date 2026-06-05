@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "AsamApp",
+    "tagline": "Gestioná tus eventos gastronómicos como un pro"
+  },
+  "nav": {
+    "home": "Inicio",
+    "calendar": "Calendario",
+    "history": "Historial",
+    "quickQuote": "Cotizador rápido",
+    "templates": "Plantillas",
+    "inventory": "Insumos",
+    "recipes": "Recetas",
+    "providers": "Proveedores",
+    "weeklyExpenses": "Gastos Mercado",
+    "shoppingList": "Lista compras",
+    "operations": "Operaciones",
+    "finance": "Finanzas",
+    "fixedCosts": "Gastos fijos",
+    "notes": "Notas",
+    "export": "Exportar",
+    "openApp": "Abrir app",
+    "logout": "Cerrar sesión"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "actions": "Acciones",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "date": "Fecha",
+    "notes": "Notas",
+    "status": "Estado"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "logout": "Cerrar sesión",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "email": "Email",
+    "invalidCredentials": "Usuario o contraseña incorrectos",
+    "sessionExpired": "Tu sesión expiró. Volvé a iniciar sesión."
+  },
+  "event": {
+    "new": "Nuevo evento",
+    "edit": "Editar evento",
+    "title": "Título",
+    "client": "Cliente",
+    "guests": "Comensales",
+    "location": "Lugar",
+    "time": "Hora",
+    "extraCosts": "Costos extra",
+    "profitMargin": "Margen de ganancia",
+    "totalPrice": "Precio total",
+    "amountPaid": "Seña / Pago",
+    "menu": "Menú",
+    "status": {
+      "label": "Estado",
+      "Cotizado": "Cotizado",
+      "Pendiente": "Pendiente",
+      "Aprobado": "Aprobado",
+      "Compras pendientes": "Compras pendientes",
+      "En preparacion": "En preparación",
+      "Realizado": "Realizado",
+      "Cobrado": "Cobrado",
+      "Cancelado": "Cancelado"
+    }
+  },
+  "finance": {
+    "revenue": "Ingresos",
+    "costs": "Costos",
+    "profit": "Ganancia",
+    "pending": "Por cobrar",
+    "rentabilidad": "Rentabilidad"
+  },
+  "inventory": {
+    "item": "Insumo",
+    "stock": "Stock",
+    "minStock": "Stock mínimo",
+    "price": "Precio",
+    "lowStock": "Stock bajo"
+  },
+  "validation": {
+    "required": "Este campo es requerido",
+    "positive": "Debe ser un número mayor o igual a 0"
+  }
+}

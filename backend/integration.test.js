@@ -10,6 +10,7 @@ const testDbPath = path.join(__dirname, 'test-integration.db');
 
 let app;
 let prisma;
+let authModule;
 let server;
 let baseUrl;
 
@@ -23,6 +24,7 @@ test.before(async () => {
   const mod = await import('./server.js');
   app = mod.app;
   prisma = mod.prisma;
+  authModule = await import('./auth.js');
 
   await new Promise((resolve) => {
     server = app.listen(0, resolve);
@@ -34,7 +36,7 @@ test.before(async () => {
 test.after(async () => {
   await new Promise((resolve) => server.close(resolve));
   await prisma.$disconnect();
-  if (existsSync(testDbPath)) rmSync(testDbPath);
+  if (authModule?.prisma) await authModule.prisma.$disconnect();
 });
 
 test('GET /api/health responde ok', async () => {
@@ -75,8 +77,19 @@ test('flujo crear evento, duplicar y lista de compras', async () => {
 
 test('auth rechaza API sin token cuando esta habilitada', async () => {
   process.env.AUTH_ENABLED = 'true';
-  process.env.AUTH_USERNAME = 'test';
-  process.env.AUTH_PASSWORD = 'secret';
+
+  await prisma.user.deleteMany({ where: { username: 'integrationtest' } });
+  await prisma.user.create({
+    data: {
+      email: 'itest@example.com',
+      username: 'integrationtest',
+      password: await import('crypto').then(({ scryptSync, randomBytes }) => {
+        const salt = randomBytes(16).toString('hex');
+        return `${salt}:${scryptSync('secret', salt, 64).toString('hex')}`;
+      }),
+      role: 'admin',
+    },
+  });
 
   const blocked = await fetch(`${baseUrl}/api/events`);
   assert.equal(blocked.status, 401);
@@ -84,7 +97,7 @@ test('auth rechaza API sin token cuando esta habilitada', async () => {
   const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'test', password: 'secret' }),
+    body: JSON.stringify({ username: 'integrationtest', password: 'secret' }),
   });
   assert.equal(loginRes.status, 200);
   const { token } = await loginRes.json();
@@ -95,5 +108,6 @@ test('auth rechaza API sin token cuando esta habilitada', async () => {
   });
   assert.equal(ok.status, 200);
 
+  await prisma.user.deleteMany({ where: { username: 'integrationtest' } });
   process.env.AUTH_ENABLED = 'false';
 });

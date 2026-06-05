@@ -18,7 +18,7 @@ export async function apiRequest(path, options = {}) {
   if (response.status === 401) {
     clearStoredToken();
     if (!path.includes('/auth/')) {
-      window.location.href = '/login';
+      window.location.href = '/app/login';
     }
   }
 

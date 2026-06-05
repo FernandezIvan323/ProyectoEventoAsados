@@ -4,7 +4,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister } from './auth.js';
+import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister, handleAuthMe } from './auth.js';
+import { ROLES, hasPermission } from './permissions.js';
 import {
   validateCatalogPayload,
   validateEventPayload,
@@ -19,6 +20,9 @@ import {
 } from './validation.js';
 import { buildShoppingList, getEventFinancialSummary, DEFAULT_SHOPPING_STATUSES } from './shoppingList.js';
 import { eventsToCsv, purchasesToCsv } from './exportData.js';
+import { logger, requestLogger, notFoundHandler, errorHandler, asyncHandler } from './logger.js';
+import { generateAlerts } from './alerts.js';
+import { ftsSearchEvents, ensureFtsTable } from './search.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -29,6 +33,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(origin => origin.trim()) } : undefined));
 app.use(express.json({ limit: '1mb' }));
+app.use(requestLogger);
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('unhandledRejection', { reason });
+});
+process.on('uncaughtException', (err) => {
+  logger.error('uncaughtException', { err });
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', version: '1.0.0' });
@@ -38,16 +50,28 @@ app.get('/api/auth/config', handleAuthConfig);
 app.post('/api/auth/login', handleAuthLogin);
 app.post('/api/auth/register', handleAuthRegister);
 app.use(authMiddleware);
+app.get('/api/auth/me', handleAuthMe);
+
+function requirePermission(permission) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    if (!hasPermission(req.user.role, permission)) {
+      return res.status(403).json({ error: `No tenés permiso para: ${permission}` });
+    }
+    next();
+  };
+}
 
 function sendValidationError(res, errors) {
   return res.status(400).json({ error: errors.join('. ') });
 }
 
 function handlePrismaError(res, error, fallbackMessage) {
-  console.error(error);
   if (error?.code === 'P2025') {
+    logger.warn('prisma_not_found', { err: error });
     return res.status(404).json({ error: 'Recurso no encontrado' });
   }
+  logger.error('prisma_error', { message: fallbackMessage, err: error });
   return res.status(500).json({ error: fallbackMessage });
 }
 
@@ -555,11 +579,12 @@ app.delete('/api/recipes/:id', async (req, res) => {
 
 app.get('/api/operations/summary', async (req, res) => {
   try {
-    const [events, purchases, inventory, providers] = await Promise.all([
+    const [events, purchases, inventory, providers, notes] = await Promise.all([
       prisma.event.findMany({ include: { purchases: true, payments: true, tasks: true } }),
       prisma.marketPurchase.findMany({ include: { items: true, provider: true, event: true } }),
       prisma.catalogItem.findMany(),
       prisma.provider.findMany(),
+      prisma.note.findMany({ where: { archived: false } }),
     ]);
 
     const totalRevenue = events.reduce((total, event) => total + Number(event.totalPrice || 0), 0);
@@ -567,6 +592,13 @@ app.get('/api/operations/summary', async (req, res) => {
     const actualCosts = purchases.reduce((total, purchase) => total + Number(purchase.totalAmount || 0), 0);
     const lowStock = inventory.filter(item => Number(item.stock || 0) <= Number(item.minStock || 0));
     const openTasks = events.flatMap(event => event.tasks.map(task => ({ ...task, eventTitle: event.title, eventId: event.id }))).filter(task => !task.done);
+
+    const today = getTodayString();
+    const noteAlerts = {
+      overdue: notes.filter(n => n.dueDate && n.dueDate < today && n.status !== 'Realizada').length,
+      today: notes.filter(n => n.dueDate === today && n.status !== 'Realizada').length,
+      pending: notes.filter(n => n.status !== 'Realizada').length,
+    };
 
     res.json({
       totalEvents: events.length,
@@ -580,9 +612,19 @@ app.get('/api/operations/summary', async (req, res) => {
       openTasks,
       providersCount: providers.length,
       purchases: purchases.map(serializeMarketPurchase),
+      noteAlerts,
     });
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener resumen operativo');
+  }
+});
+
+app.get('/api/alerts', async (_req, res) => {
+  try {
+    const alerts = await generateAlerts();
+    res.json({ alerts, total: alerts.length, generatedAt: new Date().toISOString() });
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al generar alertas');
   }
 });
 
@@ -686,6 +728,7 @@ app.delete('/api/market-purchases/:id', async (req, res) => {
 const NOTE_PRIORITIES = ['Alta', 'Media', 'Baja'];
 const NOTE_TYPES = ['Recordatorio', 'Llamada', 'Cambio cliente', 'Compra', 'Idea', 'Problema'];
 const NOTE_LINKED_TYPES = ['event', 'provider', 'purchase', 'inventory', 'general'];
+const NOTE_RECURRENCE = ['none', 'daily', 'weekly', 'monthly'];
 
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
@@ -702,20 +745,39 @@ function parseNoteTags(tags) {
 }
 
 function serializeNote(note) {
+  if (!note) return note;
   const status = note.status || (note.done ? 'Realizada' : 'Pendiente');
+  const { changelog, ...rest } = note;
   return {
-    ...note,
+    ...rest,
     status,
     done: status === 'Realizada',
     priority: NOTE_PRIORITIES.includes(note.priority) ? note.priority : 'Media',
     type: NOTE_TYPES.includes(note.type) ? note.type : 'Recordatorio',
     linkedType: NOTE_LINKED_TYPES.includes(note.linkedType) ? note.linkedType : 'general',
+    recurrence: NOTE_RECURRENCE.includes(note.recurrence) ? note.recurrence : 'none',
     tags: parseNoteTags(note.tags),
+    changelog: (changelog || []).map(entry => ({
+      id: entry.id,
+      field: entry.field,
+      oldValue: entry.oldValue,
+      newValue: entry.newValue,
+      createdAt: entry.createdAt,
+    })),
   };
 }
 
 function getTodayString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function addInterval(dateStr, interval) {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (interval === 'daily') d.setDate(d.getDate() + 1);
+  else if (interval === 'weekly') d.setDate(d.getDate() + 7);
+  else if (interval === 'monthly') d.setMonth(d.getMonth() + 1);
+  return d.toISOString().slice(0, 10);
 }
 
 function sortOperationalNotes(a, b) {
@@ -745,6 +807,8 @@ function buildNoteData(payload, partial = false) {
   if (has('type')) data.type = NOTE_TYPES.includes(payload.type) ? payload.type : 'Recordatorio';
   if (has('dueDate')) data.dueDate = payload.dueDate ? String(payload.dueDate).slice(0, 10) : null;
   if (has('pinned')) data.pinned = Boolean(payload.pinned);
+  if (has('archived')) data.archived = Boolean(payload.archived);
+  if (has('recurrence')) data.recurrence = NOTE_RECURRENCE.includes(payload.recurrence) ? payload.recurrence : 'none';
   if (has('linkedType')) data.linkedType = NOTE_LINKED_TYPES.includes(payload.linkedType) ? payload.linkedType : 'general';
   if (has('linkedId')) data.linkedId = payload.linkedId ? String(payload.linkedId).trim() : null;
 
@@ -763,6 +827,8 @@ function buildNoteData(payload, partial = false) {
     if (!has('priority')) data.priority = 'Media';
     if (!has('type')) data.type = 'Recordatorio';
     if (!has('pinned')) data.pinned = false;
+    if (!has('archived')) data.archived = false;
+    if (!has('recurrence')) data.recurrence = 'none';
     if (!has('linkedType')) data.linkedType = 'general';
     if (!has('tags')) data.tags = '[]';
   }
@@ -770,11 +836,29 @@ function buildNoteData(payload, partial = false) {
   return data;
 }
 
+async function logNoteChanges(noteId, oldNote, newData) {
+  const TRACKED = ['status', 'priority', 'type', 'dueDate', 'pinned', 'archived', 'recurrence', 'linkedType', 'linkedId', 'title', 'content'];
+  const logs = [];
+  for (const field of TRACKED) {
+    if (newData[field] === undefined) continue;
+    const oldVal = oldNote[field] === null || oldNote[field] === undefined ? '' : String(oldNote[field]);
+    const newVal = newData[field] === null || newData[field] === undefined ? '' : String(newData[field]);
+    if (oldVal !== newVal) {
+      logs.push({ field, oldValue: oldVal, newValue: newVal, noteId });
+    }
+  }
+  if (logs.length) await prisma.noteChangeLog.createMany({ data: logs });
+}
+
 app.get('/api/notes', async (req, res) => {
   try {
-    const { status, priority, type, linkedType, due } = req.query;
+    const { status, priority, type, linkedType, due, archived } = req.query;
     const today = getTodayString();
     const where = {};
+
+    if (archived === 'true') where.archived = true;
+    else if (archived === 'false') where.archived = false;
+    else if (archived !== 'all') where.archived = false;
 
     if (status) where.status = status === 'Realizada' ? 'Realizada' : 'Pendiente';
     if (priority && NOTE_PRIORITIES.includes(priority)) where.priority = priority;
@@ -786,7 +870,11 @@ app.get('/api/notes', async (req, res) => {
       where.status = 'Pendiente';
     }
 
-    const notes = await prisma.note.findMany({ where, orderBy: { updatedAt: 'desc' } });
+    const notes = await prisma.note.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      include: { changelog: { orderBy: { createdAt: 'desc' }, take: 20 } },
+    });
     res.json(notes.map(serializeNote).sort(sortOperationalNotes));
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener notas');
@@ -798,6 +886,7 @@ app.post('/api/notes', async (req, res) => {
   try {
     const note = await prisma.note.create({
       data: buildNoteData(req.body),
+      include: { changelog: true },
     });
     res.status(201).json(serializeNote(note));
   } catch (error) {
@@ -805,13 +894,60 @@ app.post('/api/notes', async (req, res) => {
   }
 });
 
-app.patch('/api/notes/:id', async (req, res) => {
-  const data = buildNoteData(req.body, true);
-  if (data.title !== undefined && !data.title) {
-    return res.status(400).json({ error: 'El título es requerido' });
-  }
+app.get('/api/notes/:id', async (req, res) => {
   try {
-    const note = await prisma.note.update({ where: { id: req.params.id }, data });
+    const note = await prisma.note.findUnique({
+      where: { id: req.params.id },
+      include: { changelog: { orderBy: { createdAt: 'desc' }, take: 50 } },
+    });
+    if (!note) return res.status(404).json({ error: 'Nota no encontrada' });
+    res.json(serializeNote(note));
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener nota');
+  }
+});
+
+app.patch('/api/notes/:id', async (req, res) => {
+  try {
+    const existing = await prisma.note.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
+
+    const newData = buildNoteData(req.body, true);
+    if (newData.title !== undefined && !newData.title) {
+      return res.status(400).json({ error: 'El título es requerido' });
+    }
+
+    // Detect transition to "Realizada" with recurrence → spawn next instance
+    const becomingDone = newData.status === 'Realizada' && existing.status !== 'Realizada';
+
+    const note = await prisma.note.update({
+      where: { id: req.params.id },
+      data: newData,
+      include: { changelog: true },
+    });
+
+    await logNoteChanges(req.params.id, existing, newData);
+
+    if (becomingDone && note.recurrence && note.recurrence !== 'none') {
+      const nextDue = addInterval(note.dueDate || getTodayString(), note.recurrence);
+      await prisma.note.create({
+        data: {
+          title: note.title,
+          content: note.content,
+          priority: note.priority,
+          type: note.type,
+          linkedType: note.linkedType,
+          linkedId: note.linkedId,
+          tags: note.tags,
+          dueDate: nextDue,
+          status: 'Pendiente',
+          done: false,
+          recurrence: note.recurrence,
+          recurrenceParentId: note.id,
+        },
+      });
+    }
+
     res.json(serializeNote(note));
   } catch (error) {
     handlePrismaError(res, error, 'Error al actualizar nota');
@@ -824,6 +960,71 @@ app.delete('/api/notes/:id', async (req, res) => {
     res.status(204).send();
   } catch (error) {
     handlePrismaError(res, error, 'Error al eliminar nota');
+  }
+});
+
+app.post('/api/notes/:id/archive', async (req, res) => {
+  try {
+    const note = await prisma.note.update({
+      where: { id: req.params.id },
+      data: { archived: true },
+      include: { changelog: true },
+    });
+    res.json(serializeNote(note));
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al archivar nota');
+  }
+});
+
+app.post('/api/notes/:id/restore', async (req, res) => {
+  try {
+    const note = await prisma.note.update({
+      where: { id: req.params.id },
+      data: { archived: false },
+      include: { changelog: true },
+    });
+    res.json(serializeNote(note));
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al restaurar nota');
+  }
+});
+
+function notesToCsv(notes) {
+  const header = ['Titulo', 'Estado', 'Prioridad', 'Tipo', 'Vencimiento', 'Contexto', 'Vinculado', 'Etiquetas', 'Fijada', 'Creada'];
+  const rows = notes.map(n => [
+    n.title,
+    n.status,
+    n.priority,
+    n.type,
+    n.dueDate || '',
+    n.linkedType,
+    n.linkedId || '',
+    (n.tags || []).join('; '),
+    n.pinned ? 'Si' : 'No',
+    n.createdAt,
+  ]);
+  const csv = [header, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+  return csv;
+}
+
+app.get('/api/notes-export', async (req, res) => {
+  try {
+    const format = req.query.format === 'csv' ? 'csv' : 'json';
+    const notes = await prisma.note.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { changelog: true },
+    });
+    const serialized = notes.map(serializeNote);
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="notas.csv"');
+      return res.send(notesToCsv(serialized));
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="notas.json"');
+    res.send(JSON.stringify(serialized, null, 2));
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al exportar notas');
   }
 });
 
@@ -932,18 +1133,9 @@ app.get('/api/search', async (req, res) => {
   }
 
   try {
+    await ensureFtsTable();
     const [events, providers, inventory, notes, templates] = await Promise.all([
-      prisma.event.findMany({
-        where: {
-          OR: [
-            { title: { contains: query } },
-            { client: { contains: query } },
-            { location: { contains: query } },
-          ],
-        },
-        take: 8,
-        orderBy: { createdAt: 'desc' },
-      }),
+      ftsSearchEvents(query, 8),
       prisma.provider.findMany({
         where: { OR: [{ name: { contains: query } }, { category: { contains: query } }] },
         take: 5,
@@ -963,7 +1155,7 @@ app.get('/api/search', async (req, res) => {
     ]);
 
     res.json({
-      events: events.map(e => ({ id: e.id, title: e.title, client: e.client, status: e.status, date: e.date })),
+      events,
       providers,
       inventory,
       notes: notes.map(serializeNote),
@@ -1013,6 +1205,164 @@ app.get('/api/export', async (req, res) => {
   }
 });
 
+// ── Users (admin only) ─────────────────────────────────────────────────────
+app.get('/api/users', requirePermission('users:read'), async (_req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, username: true, role: true, active: true, createdAt: true, updatedAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(users);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener usuarios');
+  }
+});
+
+app.post('/api/users', requirePermission('users:write'), async (req, res) => {
+  try {
+    const { email, username, password, role } = req.body || {};
+    if (!email?.trim() || !username?.trim() || !password) {
+      return res.status(400).json({ error: 'Email, usuario y contraseña son requeridos' });
+    }
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    }
+    if (role && !ROLES.includes(role)) {
+      return res.status(400).json({ error: `role debe ser uno de: ${ROLES.join(', ')}` });
+    }
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email: email.trim() }, { username: username.trim() }] },
+    });
+    if (existing) {
+      const field = existing.email === email.trim() ? 'email' : 'usuario';
+      return res.status(409).json({ error: `Ese ${field} ya esta registrado` });
+    }
+    const { hashPassword } = await import('./auth.js');
+    const user = await prisma.user.create({
+      data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role: role || 'viewer' },
+      select: { id: true, email: true, username: true, role: true, active: true, createdAt: true },
+    });
+    res.status(201).json(user);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al crear usuario');
+  }
+});
+
+app.put('/api/users/:id', requirePermission('users:write'), async (req, res) => {
+  try {
+    const { role, active } = req.body || {};
+    if (role !== undefined && !ROLES.includes(role)) {
+      return res.status(400).json({ error: `role debe ser uno de: ${ROLES.join(', ')}` });
+    }
+    const data = {};
+    if (role !== undefined) data.role = role;
+    if (active !== undefined) data.active = Boolean(active);
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data,
+      select: { id: true, email: true, username: true, role: true, active: true, updatedAt: true },
+    });
+    res.json(user);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al actualizar usuario');
+  }
+});
+
+app.delete('/api/users/:id', requirePermission('users:delete'), async (req, res) => {
+  try {
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({ error: 'No podés eliminar tu propio usuario' });
+    }
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar usuario');
+  }
+});
+
+// ── Event photos ───────────────────────────────────────────────────────────
+const ALLOWED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB en base64
+
+app.get('/api/events/:id/photos', async (req, res) => {
+  try {
+    const photos = await prisma.eventPhoto.findMany({
+      where: { eventId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, filename: true, mimeType: true, size: true, caption: true, createdAt: true },
+    });
+    res.json(photos);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener fotos');
+  }
+});
+
+app.post('/api/events/:id/photos', async (req, res) => {
+  try {
+    const { filename, mimeType, data, caption } = req.body || {};
+    if (!filename || !mimeType || !data) {
+      return res.status(400).json({ error: 'filename, mimeType y data son requeridos' });
+    }
+    if (!ALLOWED_IMAGE_MIMES.includes(mimeType)) {
+      return res.status(400).json({ error: `mimeType debe ser uno de: ${ALLOWED_IMAGE_MIMES.join(', ')}` });
+    }
+    const size = data.length;
+    if (size > MAX_PHOTO_SIZE) {
+      return res.status(413).json({ error: `La imagen excede el maximo de ${MAX_PHOTO_SIZE / 1024 / 1024}MB` });
+    }
+    const photo = await prisma.eventPhoto.create({
+      data: {
+        filename,
+        mimeType,
+        data,
+        size,
+        caption: caption?.trim() || null,
+        eventId: req.params.id,
+      },
+      select: { id: true, filename: true, mimeType: true, size: true, caption: true, createdAt: true },
+    });
+    res.status(201).json(photo);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al subir foto');
+  }
+});
+
+app.delete('/api/events/:eventId/photos/:photoId', async (req, res) => {
+  try {
+    await prisma.eventPhoto.delete({ where: { id: req.params.photoId } });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar foto');
+  }
+});
+
+// ── OpenAPI docs ──────────────────────────────────────────────────────────
+import { readFileSync } from 'fs';
+const OPENAPI_PATH = path.join(__dirname, '..', 'docs', 'openapi.yaml');
+let openapiCache = null;
+function loadOpenApi() {
+  if (openapiCache) return openapiCache;
+  try {
+    openapiCache = readFileSync(OPENAPI_PATH, 'utf8');
+  } catch (error) {
+    logger.warn('openapi_load_failed', { err: error });
+    openapiCache = '';
+  }
+  return openapiCache;
+}
+app.get('/api/docs/openapi.yaml', (_req, res) => {
+  res.type('text/yaml').send(loadOpenApi());
+});
+app.get('/api/docs', (_req, res) => {
+  res.type('html').send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>AsamApp API</title>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
+</head><body><div id="ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+<script>SwaggerUIBundle({ url: '/api/docs/openapi.yaml', dom_id: '#ui' });</script>
+</body></html>`);
+});
+
 if (process.env.SERVE_FRONTEND === 'true') {
   const distPath = path.join(__dirname, '../frontend/dist');
   const landingPath = path.join(__dirname, '../landing');
@@ -1027,12 +1377,15 @@ if (process.env.SERVE_FRONTEND === 'true') {
   });
 }
 
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMain) {
   app.listen(PORT, () => {
     const mode = process.env.SERVE_FRONTEND === 'true' ? ' + frontend estatico' : '';
-    console.log(`Servidor backend corriendo en http://localhost:${PORT}${mode}`);
+    logger.info('server_started', { port: PORT, mode: mode.trim() });
   });
 }
 

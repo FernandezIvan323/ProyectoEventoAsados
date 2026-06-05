@@ -8,9 +8,12 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test": "node --test",
-    "test:unit": "node --test test.js auth.test.js",
+    "test:unit": "node --test test.js auth.test.js logger.test.js",
     "test:integration": "node --test integration.test.js",
-    "start:prod": "node server.js"
+    "start:prod": "node server.js",
+    "backup": "node scripts/backup-db.js",
+    "backup:schedule": "node scripts/backup-scheduler.js",
+    "reset-password": "node scripts/reset-password.js"
   },
   "keywords": [],
   "author": "",

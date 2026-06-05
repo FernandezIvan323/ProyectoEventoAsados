@@ -54,6 +54,7 @@ export function getEventRealFinancials(event) {
     pending: Math.max(0, quotedPrice - amountPaid),
     realProfit,
     costVariance: purchaseTotal - quotedCost,
+    isClosed: event.status === 'Cobrado',
   };
 }
 

@@ -162,15 +162,20 @@ export default function Finance() {
                     {yearlyEvents.map(event => {
                       const r = getEventRealFinancials(event);
                       return (
-                        <TableRow key={event.id}>
+                        <TableRow key={event.id} className={r.isClosed ? 'bg-emerald-500/5 border-l-2 border-l-emerald-500' : ''}>
                           <TableCell className="font-medium">
-                            <Link to={`/history/${event.id}`} className="text-primary hover:underline">{event.title}</Link>
+                            <div className="flex items-center gap-2">
+                              <Link to={`/history/${event.id}`} className="text-primary hover:underline">{event.title}</Link>
+                              {r.isClosed && (
+                                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[9px]">Cerrado</Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>${currency(r.quotedPrice)}</TableCell>
                           <TableCell>${currency(r.quotedCost)}</TableCell>
                           <TableCell>${currency(r.purchaseTotal)}</TableCell>
                           <TableCell>${currency(r.amountPaid)}</TableCell>
-                          <TableCell className={r.realProfit >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-destructive'}>
+                          <TableCell title={r.isClosed ? 'Margen final cerrado' : ''} className={r.realProfit >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-destructive'}>
                             ${currency(r.realProfit)}
                           </TableCell>
                         </TableRow>

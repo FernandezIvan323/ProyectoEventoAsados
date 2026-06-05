@@ -233,6 +233,7 @@ export default function EventDetail() {
             <div className="flex items-center gap-2 mb-2">
               <PiggyBank className="size-3.5 text-accent/70" />
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Margen real</span>
+              {real.isClosed && <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">· Cerrado</span>}
             </div>
             <p className={`text-lg font-bold ${real.realProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               ${currency(real.realProfit)}

@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Lint syntax (parse only)
-        run: node --check server.js && node --check auth.js && node --check validation.js && node --check logger.js && node --check shoppingList.js && node --check exportData.js
+        run: node --check server.js && node --check auth.js && node --check validation.js && node --check logger.js && node --check shoppingList.js && node --check exportData.js && node --check permissions.js && node --check alerts.js && node --check search.js && node --check scripts/backup-db.js && node --check scripts/reset-password.js
       - name: Prisma generate
         run: npx prisma generate
       - name: Run unit tests
@@ -46,9 +46,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Lint (no bloqueante)
-        run: npm run lint || echo "::warning::Lint errors found (no bloqueante)"
-        continue-on-error: true
+      - name: Lint
+        run: npm run lint
       - name: Build
         run: npm run build
       - name: Unit tests

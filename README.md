@@ -2,8 +2,36 @@
 
 Aplicación web full-stack para gestionar eventos gastronómicos: cotización, presupuestos, inventario, compras de mercado, finanzas, checklist operativo, notas, multi-usuario con roles y notificaciones. Enfocada en catering, asadores y emprendedores gastronómicos.
 
-> **Estado:** v1.0.0 — production-ready local.
+![License](https://img.shields.io/github/license/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
+![Version](https://img.shields.io/github/v/release/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
+![CI](https://img.shields.io/github/actions/workflow/status/FernandezIvan323/ProyectoEventoAsados/ci.yml?style=flat-square&label=CI)
+![Node](https://img.shields.io/badge/node-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![Language](https://img.shields.io/github/languages/top/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
+![Issues](https://img.shields.io/github/issues/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
+![Stars](https://img.shields.io/github/stars/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
+
+> **Estado:** v1.0.1 — production-ready local.
 > Ver [`CHANGELOG.md`](./CHANGELOG.md) para historial completo de versiones.
+
+## Capturas
+
+<table>
+  <tr>
+    <td><img src="./docs/screenshots/01-landing.png" alt="Landing" /></td>
+    <td><img src="./docs/screenshots/05-dashboard.png" alt="Dashboard" /></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/screenshots/07-new-event.png" alt="Nuevo evento" /></td>
+    <td><img src="./docs/screenshots/09-finance.png" alt="Finanzas" /></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/screenshots/10-notes.png" alt="Notas" /></td>
+    <td><img src="./docs/screenshots/11-inventory.png" alt="Inventario" /></td>
+  </tr>
+</table>
+
+Más capturas en [`docs/screenshots/`](./docs/screenshots/): calendar, operations, login, register, dashboard mobile y landing mobile.
 
 ## Stack
 
@@ -162,6 +190,24 @@ La app React usa `React.lazy` + `Suspense` para carga diferida de las 17 paginas
 
 ## Autenticacion y gestion de usuarios
 
+### ⚠️ Importante: AUTH_SECRET en producción
+
+Por seguridad, el backend **rechaza arrancar en producción** si `AUTH_SECRET` no está definido o sigue siendo el valor por defecto (`asamapp-dev-secret-change-me`). En desarrollo se permite con un warning en consola.
+
+Generar un secreto seguro:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Y exportarlo antes de iniciar el server:
+
+```bash
+export AUTH_SECRET=<el-secreto-generado>
+export NODE_ENV=production
+npm start
+```
+
 ### Primer usuario
 Al no haber usuarios, el primer registro se crea como `admin` automaticamente. Registros adicionales quedan deshabilitados (debe hacerlo un admin desde la UI o via API).
 
@@ -231,8 +277,8 @@ cd frontend && npm run test:e2e
 
 GitHub Actions ejecuta en cada push/PR a `main`, `master` o `develop`:
 
-- **Backend**: syntax check, prisma generate, tests unit + integration
-- **Frontend**: lint, build, tests
+- **Backend**: syntax check (parse only) de 11 archivos, prisma generate, tests unit + integration
+- **Frontend**: lint (bloqueante), build, tests
 
 Ver `.github/workflows/ci.yml`.
 
@@ -245,7 +291,7 @@ Ver `.github/workflows/ci.yml`.
 | `CORS_ORIGIN` | (vacio) | Origenes CORS permitidos (CSV) |
 | `SERVE_FRONTEND` | `false` | Servir `frontend/dist` + landing desde el API |
 | `AUTH_ENABLED` | `true` | Habilitar autenticacion |
-| `AUTH_SECRET` | `asamapp-dev-secret-change-me` | Secreto para firmar tokens |
+| `AUTH_SECRET` | `asamapp-dev-secret-change-me` | Secreto para firmar tokens. ⚠️ **Requerido en producción** — el server rechaza arrancar si queda con el valor por defecto cuando `NODE_ENV=production` |
 | `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
 | `LOG_TO_FILE` | `true` | Escribir logs a `backend/logs/` |
 | `BACKUP_DIR` | `../backups/database` | Carpeta de backups |

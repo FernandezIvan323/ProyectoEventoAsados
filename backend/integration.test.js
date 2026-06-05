@@ -17,6 +17,7 @@ let baseUrl;
 test.before(async () => {
   process.env.DATABASE_URL = `file:${testDbPath}`;
   process.env.AUTH_ENABLED = 'false';
+  process.env.AUTH_SECRET = 'integration-test-secret';
 
   if (existsSync(testDbPath)) rmSync(testDbPath);
   execSync('npx prisma migrate deploy', { cwd: __dirname, stdio: 'pipe', env: process.env });

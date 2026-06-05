@@ -53,7 +53,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import {
   getNotes,
-  getNote,
   createNote,
   updateNote,
   deleteNote,
@@ -411,10 +410,8 @@ function LinkedEntityField({ linkedType, linkedId, onChangeType, onChangeId, opt
 }
 
 function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, onPin, onToggleDone, onPostpone, onOpenLinked, options }) {
-  if (!note) return null;
-
   const linkedEntity = useMemo(() => {
-    if (!note.linkedId || !options) return null;
+    if (!note || !note.linkedId || !options) return null;
     if (note.linkedType === 'event') {
       const e = (options.events || []).find(x => x.id === note.linkedId);
       return e ? { label: e.title, sub: e.client, path: `/app/history/${e.id}` } : null;
@@ -429,6 +426,8 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
     }
     return null;
   }, [note, options]);
+
+  if (!note) return null;
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-3xl" maxHeight="h-[90vh]">
@@ -742,7 +741,7 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
   );
 }
 
-function KanbanColumn({ title, icon: Icon, color, notes, onView, onDelete, onToggleDone, onPin }) {
+function KanbanColumn({ title, icon: Icon, color, notes, onView, onDelete, onToggleDone }) {
   return (
     <div className="flex h-full min-w-[280px] flex-1 flex-col rounded-2xl border border-[rgba(148,163,184,0.10)] bg-card/50">
       <div className="flex items-center justify-between gap-2 border-b border-[rgba(148,163,184,0.10)] px-4 py-3">
@@ -892,41 +891,6 @@ export default function Notes() {
       });
   }, []);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-      if (mode) return;
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        if (mode === 'create' || mode === 'edit') {
-          const form = document.querySelector('form');
-          if (form) form.requestSubmit();
-        }
-        return;
-      }
-      if (e.key === 'Escape' && mode) {
-        handleClose();
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-        return;
-      }
-      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        handleCreate();
-        return;
-      }
-      if (/^[1-9]$/.test(e.key)) {
-        const idx = parseInt(e.key, 10) - 1;
-        if (sortedNotesRef.current[idx]) handleView(sortedNotesRef.current[idx]);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [mode]);
-
   const handleCreate = () => {
     setDraft({ ...EMPTY_FORM });
     setActiveNote(null);
@@ -974,7 +938,7 @@ export default function Notes() {
         setMode('view');
         setToast({ message: 'Cambios guardados', variant: 'success' });
       }
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al guardar la nota', variant: 'error' });
     } finally {
       setSaving(false);
@@ -987,7 +951,7 @@ export default function Notes() {
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) setActiveNote(updated);
       if (mode === 'edit') setDraft(noteToDraft(updated));
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al fijar la nota', variant: 'error' });
     }
   };
@@ -1002,7 +966,7 @@ export default function Notes() {
         message: note.status === 'Realizada' ? 'Nota reabierta' : '¡Bien! Una menos en la lista',
         variant: 'success',
       });
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al actualizar la nota', variant: 'error' });
     }
   };
@@ -1014,7 +978,7 @@ export default function Notes() {
       if (activeNote?.id === note.id) setActiveNote(updated);
       if (mode === 'edit') setDraft(noteToDraft(updated));
       setToast({ message: 'Pospuesto para mañana', variant: 'success' });
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al posponer la nota', variant: 'error' });
     }
   };
@@ -1025,7 +989,7 @@ export default function Notes() {
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) handleClose();
       setToast({ message: 'Nota archivada', variant: 'success' });
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al archivar la nota', variant: 'error' });
     }
   };
@@ -1036,7 +1000,7 @@ export default function Notes() {
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) setActiveNote(updated);
       setToast({ message: 'Nota restaurada', variant: 'success' });
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al restaurar la nota', variant: 'error' });
     }
   };
@@ -1050,7 +1014,7 @@ export default function Notes() {
       setNotes(prev => prev.filter(n => n.id !== confirmDelete.id));
       if (activeNote?.id === confirmDelete.id) handleClose();
       setToast({ message: 'Nota eliminada', variant: 'success' });
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al eliminar la nota', variant: 'error' });
     } finally {
       setConfirmDelete(null);
@@ -1069,7 +1033,7 @@ export default function Notes() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setToast({ message: `Notas exportadas a ${format.toUpperCase()}`, variant: 'success' });
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al exportar', variant: 'error' });
     }
   };
@@ -1079,7 +1043,6 @@ export default function Notes() {
   };
 
   const filteredNotes = useMemo(() => {
-    const today = todayString();
     const text = query.trim().toLowerCase();
     return notes.filter(note => {
       const done = note.status === 'Realizada';
@@ -1111,8 +1074,40 @@ export default function Notes() {
     });
   }, [filteredNotes]);
 
-  const sortedNotesRef = useRef(sortedNotes);
-  useEffect(() => { sortedNotesRef.current = sortedNotes; }, [sortedNotes]);
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (mode) return;
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        if (mode === 'create' || mode === 'edit') {
+          const form = document.querySelector('form');
+          if (form) form.requestSubmit();
+        }
+        return;
+      }
+      if (e.key === 'Escape' && mode) {
+        handleClose();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        handleCreate();
+        return;
+      }
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        if (sortedNotes[idx]) handleView(sortedNotes[idx]);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [mode, sortedNotes]);
 
   const stats = useMemo(() => {
     const all = notes.filter(n => !n.archived);

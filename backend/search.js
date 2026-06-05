@@ -17,6 +17,8 @@ function tokenize(query) {
     .join(' ');
 }
 
+export { escapeFts, tokenize };
+
 export async function ensureFtsTable() {
   if (ftsInitialized) return;
   try {

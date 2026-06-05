@@ -37,6 +37,7 @@ export default function ShoppingList() {
 
   useEffect(() => {
     loadList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStatuses]);
 
   const toggleStatus = (status) => {

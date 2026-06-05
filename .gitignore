@@ -3,6 +3,7 @@ dist/
 .env
 dev.db
 dev.db-journal
+test-integration.db
 .vite/
 *.log
 backups/

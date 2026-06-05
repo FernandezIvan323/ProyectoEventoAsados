@@ -8,9 +8,7 @@ import {
   Plus,
   ReceiptText,
   Save,
-  Store,
   Trash2,
-  UserRound,
 } from 'lucide-react';
 
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';

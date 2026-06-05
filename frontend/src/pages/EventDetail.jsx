@@ -21,7 +21,6 @@ import {
   AlertCircle,
   ListChecks,
   ReceiptText,
-  Calendar,
 } from 'lucide-react';
 import { generateEventPdf } from '@/lib/generatePdf';
 
@@ -29,8 +28,6 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/Reso
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { getAllowedStatuses, getStatusVariant } from '@/lib/eventStatus';
 import { currency, getEventFinancials, getEventRealFinancials, getEventSubtotal } from '@/lib/finance';
 import { PAYMENT_METHODS } from '@/lib/paymentMethods';

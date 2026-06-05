@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { differenceInDays, format, isToday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
-  AlertTriangle,
   Bell,
   Calendar as CalendarIcon,
   CalendarDays,
@@ -339,7 +338,7 @@ export default function Dashboard() {
                   />
                 ) : (
                   <div className="space-y-2">
-                    {upcoming.map((event, i) => {
+                    {upcoming.map((event) => {
                       const dateObj = event.date ? parseISO(event.date) : new Date();
                       const daysUntil = differenceInDays(dateObj, new Date());
                       const isTodayEvent = isToday(dateObj);

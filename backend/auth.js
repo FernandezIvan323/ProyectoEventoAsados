@@ -10,8 +10,37 @@ export function isAuthEnabled() {
   return process.env.AUTH_ENABLED !== 'false';
 }
 
+export function validateSecret() {
+  getSecret();
+  return true;
+}
+
 function getSecret() {
-  return process.env.AUTH_SECRET || 'asamapp-dev-secret-change-me';
+  if (process.env.AUTH_ENABLED === 'false') {
+    return process.env.AUTH_SECRET || 'asamapp-dev-secret-change-me';
+  }
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'AUTH_SECRET no esta definido. Es requerido en produccion para firmar tokens de forma segura. ' +
+        'Genera uno con: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+      );
+    }
+    console.warn(
+      '[auth] ADVERTENCIA: AUTH_SECRET no definido, usando valor de desarrollo inseguro. ' +
+      'Define AUTH_SECRET antes de desplegar en produccion.'
+    );
+    return 'asamapp-dev-secret-change-me';
+  }
+  if (secret === 'asamapp-dev-secret-change-me' && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'AUTH_SECRET tiene el valor por defecto de desarrollo. ' +
+      'Cambialo antes de desplegar en produccion. ' +
+      'Genera uno con: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+  }
+  return secret;
 }
 
 function hashPassword(password) {

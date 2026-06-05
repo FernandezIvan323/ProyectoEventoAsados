@@ -4,6 +4,20 @@ Todos los cambios relevantes del proyecto se documentan aqui.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y el versionado sigue [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-06-05
+
+### Mejorado
+- Lint pasa con 0 errores y 0 warnings (antes tenia 44 errores pre-existentes). CI ahora corre lint como paso bloqueante.
+- `AUTH_SECRET` se valida al arranque: el server rechaza iniciar en produccion si esta vacio o con el valor por defecto. En desarrollo imprime un warning. Nuevo helper `validateSecret()` exportado.
+- 25 tests unitarios nuevos para features "Deseable": `permissions.test.js` (12 tests), `search.test.js` (8 tests), `alerts.test.js` (5 tests). Total: 50 unit tests + 3 integration = 53 tests, todos pasando.
+- README reescrito con badges (license, version, CI, Node, React), capturas de pantalla en `docs/screenshots/`, seccion destacada sobre `AUTH_SECRET` en produccion y enlaces a las plantillas de Issues/PRs.
+- Capturas de pantalla de las pantallas principales agregadas en `docs/screenshots/` (landing, login, register, dashboard desktop y mobile, new-event, calendar, finance, notes, inventory, operations).
+- Plantillas de Issues y PRs en `.github/ISSUE_TEMPLATE/` y `.github/PULL_REQUEST_TEMPLATE.md`.
+- Atributos SVG corregidos en `Login.jsx` y `Register.jsx` (kebab-case → camelCase, eliminan warnings de React en consola).
+
+### Seguridad
+- `getSecret()` ahora retorna el default silenciosamente solo cuando `AUTH_ENABLED=false`. Si auth esta habilitada, exige un secreto real o falla con instruccion de como generar uno.
+
 ## [1.0.0] - 2026-06-04
 
 ### Agregado

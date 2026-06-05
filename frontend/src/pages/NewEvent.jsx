@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, Beef, ChevronLeft, ChevronRight, PartyPopper, MapPin, Clock, User, ShoppingCart } from 'lucide-react';
+import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, Beef, ChevronLeft, ChevronRight, PartyPopper, MapPin, Clock, ShoppingCart } from 'lucide-react';
 import { ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';
 import { useInventory } from '@/hooks/useInventory';

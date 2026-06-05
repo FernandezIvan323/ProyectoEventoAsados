@@ -1,4 +1,4 @@
-import { HelpCircle, Info, Trash2, TriangleAlert } from 'lucide-react';
+import { Info, Trash2, TriangleAlert } from 'lucide-react';
 
 export function ConfirmDialog({
   isOpen,

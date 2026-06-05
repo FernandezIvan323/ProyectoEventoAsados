@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister, handleAuthMe } from './auth.js';
+import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister, handleAuthMe, validateSecret } from './auth.js';
 import { ROLES, hasPermission } from './permissions.js';
 import {
   validateCatalogPayload,
@@ -28,6 +28,15 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 const corsOrigin = process.env.CORS_ORIGIN;
+
+try {
+  validateSecret();
+} catch (err) {
+  logger.error('config_invalid', { message: err.message });
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

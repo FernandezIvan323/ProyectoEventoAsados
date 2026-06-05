@@ -144,7 +144,7 @@ export default function Layout() {
                         key={to}
                         to={to}
                         end={to === '/'}
-                        className={({ isActive }) => cn(
+                        className={() => cn(
                           'relative flex items-center text-sm font-medium transition-all duration-200 hover:bg-muted/10',
                         )}
                         style={({ isActive }) => ({

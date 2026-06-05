@@ -39,8 +39,6 @@ export default function Finance() {
   const currentMonthIndex = new Date().getMonth();
   const thisMonthData = monthlyData[currentMonthIndex];
   const totalYearProfit = monthlyData.reduce((acc, curr) => acc + curr.ganancia, 0);
-  const totalYearRevenue = monthlyData.reduce((acc, curr) => acc + curr.ingresos, 0);
-  const totalYearCosts = monthlyData.reduce((acc, curr) => acc + curr.costos, 0);
   const totalYearEvents = monthlyData.reduce((acc, curr) => acc + curr.count, 0);
   const maxRevenue = Math.max(...monthlyData.map(d => d.ingresos), 1);
   const monthsWithEvents = monthlyData.filter(month => month.count > 0);

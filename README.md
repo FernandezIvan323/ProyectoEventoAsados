@@ -62,7 +62,7 @@ ProyectoAsado/
 │   └── openapi.yaml          # Especificacion OpenAPI 3.0
 ├── .github/workflows/        # CI/CD (backend + frontend)
 ├── CHANGELOG.md              # Historial versionado
-├── LICENSE                   # ISC
+├── LICENSE                   # MIT
 └── README.md
 ```
 
@@ -134,7 +134,7 @@ URLs:
 La app React usa `React.lazy` + `Suspense` para carga diferida de las 17 paginas, reduciendo el bundle principal de 1,181 kB a 399 kB.
 
 ### PWA (Progressive Web App)
-- `manifest.json` con iconos, shortcuts (Nuevo evento, Cotizador, Notas) y theme color verde
+- `manifest.json` con iconos, shortcuts (Nuevo evento, Cotizador, Notas) y theme color naranja
 - Service worker (`sw.js`) con estrategia network-first para API y stale-while-revalidate para assets
 - Instalable en mobile y desktop, soporta uso offline
 - Solo se registra en produccion (`import.meta.env.PROD`)
@@ -292,4 +292,4 @@ Ver `.github/workflows/ci.yml`.
 
 ## Licencia
 
-ISC — ver [`LICENSE`](./LICENSE).
+MIT — ver [`LICENSE`](./LICENSE).

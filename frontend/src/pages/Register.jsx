@@ -43,37 +43,37 @@ export default function Register({ onAuthSuccess }) {
   };
 
   return (
-    <div className="relative flex min-h-svh items-center justify-center bg-[#0A0E1A] p-4 overflow-hidden">
+    <div className="relative flex min-h-svh items-center justify-center bg-[#0A1428] p-4 overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(148,163,184,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#10B981]/10 mb-4">
-            <Flame className="w-6 h-6 text-[#10B981]" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#E8834A]/10 mb-4">
+            <Flame className="w-6 h-6 text-[#E8834A]" />
           </div>
-          <h1 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, #F8FAFC 0%, #10B981 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Crear cuenta</h1>
-          <p className="text-[#94A3B8] text-sm mt-1">Registrate para usar AsamApp</p>
+          <h1 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #E8834A 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Crear cuenta</h1>
+          <p className="text-[#8BA0B0] text-sm mt-1">Registrate para usar AsamApp</p>
         </div>
 
-        <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-[#111726] p-6">
+        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0F1B33] p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#94A3B8] text-xs font-medium">Email</Label>
-              <Input id="email" type="email" value={form.email} onChange={handleChange('email')} autoComplete="email" required className="h-10 bg-[#0A0E1A] border-[rgba(148,163,184,0.10)] text-[#F8FAFC] text-sm focus-visible:ring-[#10B981] focus-visible:border-[#10B981]" placeholder="tu@email.com" />
+              <Label htmlFor="email" className="text-[#8BA0B0] text-xs font-medium">Email</Label>
+              <Input id="email" type="email" value={form.email} onChange={handleChange('email')} autoComplete="email" required className="h-10 bg-[#0A1428] border-[rgba(255,255,255,0.06)] text-[#FFFFFF] text-sm focus-visible:ring-[#E8834A] focus-visible:border-[#E8834A]" placeholder="tu@email.com" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-[#94A3B8] text-xs font-medium">Usuario</Label>
-              <Input id="username" value={form.username} onChange={handleChange('username')} autoComplete="username" required className="h-10 bg-[#0A0E1A] border-[rgba(148,163,184,0.10)] text-[#F8FAFC] text-sm focus-visible:ring-[#10B981] focus-visible:border-[#10B981]" placeholder="Tu nombre de usuario" />
+              <Label htmlFor="username" className="text-[#8BA0B0] text-xs font-medium">Usuario</Label>
+              <Input id="username" value={form.username} onChange={handleChange('username')} autoComplete="username" required className="h-10 bg-[#0A1428] border-[rgba(255,255,255,0.06)] text-[#FFFFFF] text-sm focus-visible:ring-[#E8834A] focus-visible:border-[#E8834A]" placeholder="Tu nombre de usuario" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[#94A3B8] text-xs font-medium">Contraseña</Label>
-              <Input id="password" type="password" value={form.password} onChange={handleChange('password')} autoComplete="new-password" required className="h-10 bg-[#0A0E1A] border-[rgba(148,163,184,0.10)] text-[#F8FAFC] text-sm focus-visible:ring-[#10B981] focus-visible:border-[#10B981]" placeholder="Mínimo 4 caracteres" />
+              <Label htmlFor="password" className="text-[#8BA0B0] text-xs font-medium">Contraseña</Label>
+              <Input id="password" type="password" value={form.password} onChange={handleChange('password')} autoComplete="new-password" required className="h-10 bg-[#0A1428] border-[rgba(255,255,255,0.06)] text-[#FFFFFF] text-sm focus-visible:ring-[#E8834A] focus-visible:border-[#E8834A]" placeholder="Mínimo 4 caracteres" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm" className="text-[#94A3B8] text-xs font-medium">Confirmar contraseña</Label>
-              <Input id="confirm" type="password" value={form.confirm} onChange={handleChange('confirm')} autoComplete="new-password" required className="h-10 bg-[#0A0E1A] border-[rgba(148,163,184,0.10)] text-[#F8FAFC] text-sm focus-visible:ring-[#10B981] focus-visible:border-[#10B981]" placeholder="Repetí la contraseña" />
+              <Label htmlFor="confirm" className="text-[#8BA0B0] text-xs font-medium">Confirmar contraseña</Label>
+              <Input id="confirm" type="password" value={form.confirm} onChange={handleChange('confirm')} autoComplete="new-password" required className="h-10 bg-[#0A1428] border-[rgba(255,255,255,0.06)] text-[#FFFFFF] text-sm focus-visible:ring-[#E8834A] focus-visible:border-[#E8834A]" placeholder="Repetí la contraseña" />
             </div>
             {error && <p className="text-sm text-red-400">{error.message || error}</p>}
-            <Button type="submit" className="w-full h-10 bg-[#10B981] hover:bg-[#059669] text-white font-semibold text-sm transition-all" disabled={isLoading}>
+            <Button type="submit" className="w-full h-10 bg-[#E8834A] hover:bg-[#D4733A] text-white font-semibold text-sm transition-all" disabled={isLoading}>
               <UserPlus className="w-4 h-4" />
               {isLoading ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>
@@ -82,13 +82,13 @@ export default function Register({ onAuthSuccess }) {
 
         <p className="text-center mt-6 text-[#64748B] text-sm">
           ¿Ya tenés cuenta?{' '}
-          <Link to="/login" className="text-[#10B981] hover:text-[#059669] font-medium transition-colors">Iniciá sesión</Link>
+          <Link to="/login" className="text-[#E8834A] hover:text-[#D4733A] font-medium transition-colors">Iniciá sesión</Link>
         </p>
         <p className="text-center mt-4 text-[11px] text-[#475569] leading-relaxed px-4">
           App familiar compartida: todos los usuarios ven y editan los mismos eventos, notas y compras.
         </p>
-        <div className="text-center mt-6 pt-4 border-t border-[rgba(148,163,184,0.06)]">
-          <a href="/landing/" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[rgba(148,163,184,0.12)] bg-[#111726]/50 hover:bg-[#1A233A] text-[#94A3B8] hover:text-[#F8FAFC] text-xs font-medium transition-all duration-200 hover:border-[rgba(148,163,184,0.2)]">
+        <div className="text-center mt-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+          <a href="/landing/" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#0F1B33]/50 hover:bg-[#132240] text-[#8BA0B0] hover:text-[#FFFFFF] text-xs font-medium transition-all duration-200 hover:border-[rgba(255,255,255,0.10)]">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             Volver al inicio
           </a>

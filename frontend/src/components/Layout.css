@@ -38,7 +38,7 @@
 }
 
 .nav-item.active {
-  background-color: rgba(169, 50, 38, 0.08);
+  background-color: rgba(232, 131, 74, 0.15);
   color: var(--primary-color);
   font-weight: 600;
 }

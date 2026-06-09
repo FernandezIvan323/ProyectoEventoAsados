@@ -343,7 +343,7 @@ function ModalShell({ children, onClose, maxWidth = 'max-w-3xl', maxHeight = 'h-
       />
       <div
         className={cn('relative z-10 flex w-full flex-col overflow-hidden rounded-2xl shadow-2xl', maxWidth, maxHeight)}
-        style={{ background: '#111726', border: '1px solid rgba(148,163,184,0.10)' }}
+        style={{ background: '#0F1B33', border: '1px solid rgba(255,255,255,0.06)' }}
       >
         {children}
       </div>
@@ -353,7 +353,7 @@ function ModalShell({ children, onClose, maxWidth = 'max-w-3xl', maxHeight = 'h-
 
 function ModalHeader({ onClose, children, action }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[rgba(148,163,184,0.10)] px-6 py-4">
+    <div className="flex items-start justify-between gap-4 border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
       <div className="min-w-0">{children}</div>
       <div className="flex flex-wrap items-center gap-2">
         {action}
@@ -478,20 +478,20 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
         {note.content ? (
-          <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-secondary/20 p-4">
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/20 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <TypeIcon2 className="size-3.5" /> Contenido
             </div>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{note.content}</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-[rgba(148,163,184,0.15)] p-4 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-[rgba(255,255,255,0.06)] p-4 text-center text-sm text-muted-foreground">
             Sin contenido
           </div>
         )}
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-secondary/15 p-4">
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/15 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <Calendar className="size-3.5" /> Vencimiento
             </div>
@@ -499,7 +499,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
               {note.dueDate ? format(new Date(`${note.dueDate}T00:00:00`), "EEEE d 'de' MMMM, yyyy", { locale: es }) : 'Sin fecha de vencimiento'}
             </p>
           </div>
-          <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-secondary/15 p-4">
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/15 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <Link2 className="size-3.5" /> Contexto
             </div>
@@ -523,7 +523,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
         </div>
 
         {(note.tags || []).length > 0 && (
-          <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-secondary/15 p-4">
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/15 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <Tag className="size-3.5" /> Etiquetas
             </div>
@@ -538,7 +538,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
         )}
 
         {(note.changelog || []).length > 0 && (
-          <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-secondary/10 p-4">
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/10 p-4">
             <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <History className="size-3.5" /> Historial de cambios
             </div>
@@ -562,7 +562,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
           </div>
         )}
 
-        <div className="rounded-xl border border-[rgba(148,163,184,0.10)] bg-secondary/10 p-4">
+        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/10 p-4">
           <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <CalendarDays className="size-3.5" /> Tiempos
           </div>
@@ -573,7 +573,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-[rgba(148,163,184,0.10)] px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-3 border-t border-[rgba(255,255,255,0.06)] px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
         <Button type="button" variant="outline" size="sm" onClick={() => onPostpone(note)}>
           <Clock className="size-4" /> Posponer
         </Button>
@@ -701,7 +701,7 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
           />
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-[rgba(148,163,184,0.10)] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-[rgba(255,255,255,0.06)] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {note && isOverdue(note) && (
               <span className="inline-flex items-center rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive">
@@ -743,8 +743,8 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
 
 function KanbanColumn({ title, icon: Icon, color, notes, onView, onDelete, onToggleDone }) {
   return (
-    <div className="flex h-full min-w-[280px] flex-1 flex-col rounded-2xl border border-[rgba(148,163,184,0.10)] bg-card/50">
-      <div className="flex items-center justify-between gap-2 border-b border-[rgba(148,163,184,0.10)] px-4 py-3">
+    <div className="flex h-full min-w-[280px] flex-1 flex-col rounded-2xl border border-[rgba(255,255,255,0.06)] bg-card/50">
+      <div className="flex items-center justify-between gap-2 border-b border-[rgba(255,255,255,0.06)] px-4 py-3">
         <div className="flex items-center gap-2">
           <Icon className={cn('size-4', color)} />
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -824,7 +824,7 @@ function Toast({ message, variant = 'success', onClose }) {
   }, [onClose]);
 
   const colors = variant === 'success'
-    ? { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.5)', icon: 'bg-primary' }
+    ? { bg: 'rgba(232, 131, 74, 0.15)', border: 'rgba(232, 131, 74, 0.5)', icon: 'bg-primary' }
     : { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.5)', icon: 'bg-destructive' };
 
   return (

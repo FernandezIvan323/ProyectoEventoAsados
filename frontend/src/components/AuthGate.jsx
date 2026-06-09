@@ -40,7 +40,7 @@ export default function AuthGate({ children }) {
 
   if (!checked) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-[#0A0E1A]">
+      <div className="flex min-h-svh items-center justify-center bg-[#0A1428]">
         <LoadingState title="Iniciando AsamApp" />
       </div>
     );

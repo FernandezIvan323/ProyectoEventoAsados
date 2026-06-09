@@ -146,9 +146,9 @@
 }
 
 .status-select.pendiente { background-color: var(--warning-bg); color: var(--warning-color); border-color: transparent; }
-.status-select.aprobado { background-color: rgba(46, 125, 50, 0.2); color: #81C784; border-color: transparent; }
+.status-select.aprobado { background-color: rgba(232, 131, 74, 0.2); color: #E8834A; border-color: transparent; }
 .status-select.realizado { background-color: var(--success-bg); color: var(--success-color); border-color: transparent; }
-.status-select.cancelado { background-color: rgba(231, 76, 60, 0.2); color: #E74C3C; border-color: transparent; }
+.status-select.cancelado { background-color: rgba(239, 68, 68, 0.2); color: #EF4444; border-color: transparent; }
 
 /* Modal Styles */
 .modal-overlay {

@@ -67,30 +67,6 @@ ProyectoAsado/
 └── README.md
 ```
 
-## Inicio rapido
-
-```bash
-# 1. Instalar dependencias
-cd backend && npm install
-cd ../frontend && npm install
-
-# 2. Aplicar migraciones
-cd ../backend && npx prisma migrate deploy
-
-# 3. Iniciar aplicacion (Windows)
-cd .. && INICIAR.bat
-
-# O manualmente:
-# Terminal 1: cd backend && node server.js
-# Terminal 2: cd frontend && npm run dev
-```
-
-URLs:
-- Landing: http://localhost:5173/
-- App: http://localhost:5173/app/
-- API: http://localhost:3000/
-- Docs: http://localhost:3000/api/docs
-
 ## Funcionalidades
 
 ### Gestion de eventos

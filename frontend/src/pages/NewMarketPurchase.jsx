@@ -7,6 +7,7 @@ import {
   Plus,
   ReceiptText,
   Save,
+  Store,
   Trash2,
   X,
 } from 'lucide-react';
@@ -76,8 +77,22 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
     [purchase.items],
   );
 
+  const selectedProvider = useMemo(
+    () => providers.find(p => p.id === purchase.providerId),
+    [providers, purchase.providerId],
+  );
+
   const updateField = (field, value) => {
     onChange({ ...purchase, [field]: value });
+  };
+
+  const handleProviderChange = (providerId) => {
+    const provider = providers.find(p => p.id === providerId);
+    onChange({
+      ...purchase,
+      providerId,
+      store: provider ? provider.name : purchase.store,
+    });
   };
 
   const addItem = () => {
@@ -94,25 +109,6 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
     onChange({ ...purchase, items: purchase.items.filter(item => item.localId !== localId) });
   };
 
-  const handlePhotoUpload = async (event) => {
-    const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
-    if (!files.length) return;
-    try {
-      const remainingSlots = Math.max(0, 6 - purchase.receiptPhotos.length);
-      const selectedFiles = files.slice(0, remainingSlots);
-      const photos = await Promise.all(selectedFiles.map(readFileAsDataUrl));
-      onChange({ ...purchase, receiptPhotos: [...purchase.receiptPhotos, ...photos] });
-    } catch {
-      setBlockError('No se pudieron leer una o mas imagenes de la factura.');
-    } finally {
-      event.target.value = '';
-    }
-  };
-
-  const removePhoto = (index) => {
-    onChange({ ...purchase, receiptPhotos: purchase.receiptPhotos.filter((_, i) => i !== index) });
-  };
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
@@ -127,12 +123,17 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
         )}
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <FormField label="Establecimiento / Tienda *" className="md:col-span-2">
-            <Input value={purchase.store} onChange={e => updateField('store', e.target.value)} placeholder="Ej. Supermercado, Carniceria" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+          <FormField label="Establecimiento / Tienda *" className="md:col-span-4">
+            <Input
+              value={purchase.store}
+              onChange={e => updateField('store', e.target.value)}
+              placeholder="Ej. Supermercado, Carnicería"
+              disabled={!!selectedProvider}
+            />
           </FormField>
-          <FormField label="Proveedor registrado">
-            <Select value={purchase.providerId} onChange={e => updateField('providerId', e.target.value)}>
+          <FormField label="Proveedor registrado" className="md:col-span-2">
+            <Select value={purchase.providerId} onChange={e => handleProviderChange(e.target.value)}>
               <option value="">Sin proveedor</option>
               {providers.map(provider => (
                 <option key={provider.id} value={provider.id}>{provider.name}</option>
@@ -141,25 +142,41 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
           </FormField>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 border-t border-border/40 pt-4">
-          <FormField label="Metodo de pago">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <FormField label="Método de pago" className="md:col-span-2">
             <Select value={purchase.paymentMethod} onChange={e => updateField('paymentMethod', e.target.value)}>
               {PAYMENT_METHODS.map(method => (
                 <option key={method} value={method}>{method}</option>
               ))}
             </Select>
           </FormField>
+          {selectedProvider && (
+            <FormField label="Teléfono del proveedor" className="md:col-span-2">
+              <Input value={selectedProvider.phone || '—'} disabled className="text-muted-foreground" />
+            </FormField>
+          )}
         </div>
 
-        <div className="border-t border-border/40 pt-4 space-y-3">
-          <h4 className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Productos</h4>
+        <div className="border-t border-border/40 pt-4">
+          <h4 className="mb-3 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+            <Store className="mr-1 inline-block size-3.5" /> Productos
+          </h4>
           <div className="rounded-xl border border-border/60 bg-black/20 p-4 shadow-inner">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
-              <FormField label="Producto" className="md:col-span-4">
-                <Input value={productDraft.name} onChange={e => setProductDraft({ ...productDraft, name: e.target.value })} placeholder="Ej. Carne" />
+              <FormField label="Producto" className="md:col-span-5">
+                <Input
+                  value={productDraft.name}
+                  onChange={e => setProductDraft({ ...productDraft, name: e.target.value })}
+                  placeholder="Ej. Carne"
+                  className="placeholder:text-muted-foreground/40"
+                />
               </FormField>
-              <FormField label="Cantidad" className="md:col-span-2">
-                <Input type="number" min="0.01" step="0.01" value={productDraft.quantity} onChange={e => setProductDraft({ ...productDraft, quantity: e.target.value })} />
+              <FormField label="Cant." className="md:col-span-2">
+                <Input
+                  type="number" min="0.01" step="0.01"
+                  value={productDraft.quantity}
+                  onChange={e => setProductDraft({ ...productDraft, quantity: e.target.value })}
+                />
               </FormField>
               <FormField label="Unidad" className="md:col-span-2">
                 <Select value={productDraft.unit} onChange={e => setProductDraft({ ...productDraft, unit: e.target.value })}>
@@ -167,58 +184,41 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
                 </Select>
               </FormField>
               <FormField label="Precio unit." className="md:col-span-2">
-                <Input type="number" min="0" step="0.01" value={productDraft.unitPrice} onChange={e => setProductDraft({ ...productDraft, unitPrice: e.target.value })} />
+                <Input
+                  type="number" min="0" step="0.01"
+                  value={productDraft.unitPrice}
+                  onChange={e => setProductDraft({ ...productDraft, unitPrice: e.target.value })}
+                />
               </FormField>
-              <div className="md:col-span-2">
-                <Button type="button" onClick={addItem} className="w-full" size="sm">
-                  <Plus className="size-4" /> Agregar
+              <div className="md:col-span-1 flex items-end">
+                <Button type="button" onClick={addItem} className="w-full h-9 px-2" size="sm" title="Agregar producto">
+                  <Plus className="size-4" />
                 </Button>
               </div>
             </div>
+            {blockError && <p className="mt-2 text-sm text-destructive">{blockError}</p>}
           </div>
 
           {purchase.items.length > 0 && (
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            <div className="mt-3 space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              <div className="flex items-center gap-3 px-4 py-1.5 text-[10px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+                <span className="flex-1">Producto</span>
+                <span className="w-16 text-right">Cant.</span>
+                <span className="w-20 text-right">Precio</span>
+                <span className="w-20 text-right">Subtotal</span>
+                <span className="w-8" />
+              </div>
               {purchase.items.map(item => (
-                <div key={item.localId} className="flex items-center justify-between gap-3 bg-black/25 border border-border/60 rounded-xl px-4 py-3">
-                  <div className="min-w-0 flex-1">
+                <div key={item.localId} className="flex items-center gap-3 rounded-lg border border-border/60 bg-black/25 px-4 py-2.5">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.quantity} {item.unit} x ${currency(item.unitPrice)}</p>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-bold text-foreground">${currency(itemSubtotal(item))}</span>
-                    <button type="button" onClick={() => removeItem(item.localId)} className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-destructive/20 text-destructive/80 hover:text-destructive" title="Quitar producto">
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-border/40 pt-4 space-y-3">
-          <FormField label="Notas">
-            <textarea className="border-input bg-background ring-offset-background placeholder:text-muted-foreground flex min-h-20 w-full resize-y rounded-md border px-3 py-2 text-sm shadow-xs transition-all duration-200 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]" placeholder="Opcional" value={purchase.notes} onChange={e => updateField('notes', e.target.value)} />
-          </FormField>
-        </div>
-
-        <div className="border-t border-border/40 pt-4 space-y-3">
-          <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fotos de facturas</label>
-          <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary p-4 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
-            <Image className="mb-2 size-6 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Subir fotos</span>
-            <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imagenes</span>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-          </label>
-          {purchase.receiptPhotos.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {purchase.receiptPhotos.map((photo, photoIndex) => (
-                <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border border-border/60 bg-card">
-                  <img src={photo} alt={`Factura ${photoIndex + 1}`} className="h-24 w-full object-cover" />
-                  <Button type="button" variant="destructive" size="icon" className="absolute right-1 top-1 size-7" onClick={() => removePhoto(photoIndex)} title="Quitar foto">
+                  <span className="w-16 text-right text-xs text-muted-foreground">{item.quantity} {item.unit}</span>
+                  <span className="w-20 text-right text-xs text-muted-foreground">${currency(item.unitPrice)}</span>
+                  <span className="w-20 text-right text-sm font-bold text-foreground">${currency(itemSubtotal(item))}</span>
+                  <button type="button" onClick={() => removeItem(item.localId)} className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-destructive/20 text-destructive/80 hover:text-destructive" title="Quitar producto">
                     <Trash2 className="size-3.5" />
-                  </Button>
+                  </button>
                 </div>
               ))}
             </div>
@@ -229,8 +229,6 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
           <span className="text-sm font-semibold text-muted-foreground">Subtotal compra #{index + 1}</span>
           <span className="text-lg font-bold text-foreground">${currency(totalAmount)}</span>
         </div>
-
-        {blockError && <p className="text-sm text-destructive">{blockError}</p>}
       </CardContent>
     </Card>
   );
@@ -251,6 +249,9 @@ export default function NewMarketPurchase() {
     eventId: '',
     purchases: [createBlankPurchase()],
   });
+
+  const [sessionNotes, setSessionNotes] = useState('');
+  const [sessionPhotos, setSessionPhotos] = useState([]);
 
   useEffect(() => {
     getEvents().then(data => setEvents(Array.isArray(data) ? data : [])).catch(() => setEvents([]));
@@ -312,6 +313,25 @@ export default function NewMarketPurchase() {
     setAlertOpen(true);
   };
 
+  const handleSessionPhotosUpload = async (event) => {
+    const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
+    if (!files.length) return;
+    try {
+      const remainingSlots = Math.max(0, 6 - sessionPhotos.length);
+      const selectedFiles = files.slice(0, remainingSlots);
+      const photos = await Promise.all(selectedFiles.map(readFileAsDataUrl));
+      setSessionPhotos(prev => [...prev, ...photos]);
+    } catch {
+      triggerAlert('Error', 'No se pudieron leer una o más imágenes.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const removeSessionPhoto = (index) => {
+    setSessionPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = async () => {
     if (session.purchases.length === 0) {
       triggerAlert('Sin compras', 'Agrega al menos una compra para guardar.');
@@ -320,7 +340,7 @@ export default function NewMarketPurchase() {
     for (let i = 0; i < session.purchases.length; i++) {
       const p = session.purchases[i];
       if (!p.store.trim()) {
-        triggerAlert('Informacion requerida', `Ingresa el establecimiento de la compra #${i + 1}.`);
+        triggerAlert('Información requerida', `Ingresa el establecimiento de la compra #${i + 1}.`);
         return;
       }
       const validItems = p.items.filter(item => item.name.trim() && Number(item.quantity) > 0);
@@ -336,14 +356,15 @@ export default function NewMarketPurchase() {
       for (let i = 0; i < session.purchases.length; i++) {
         const p = session.purchases[i];
         const validItems = p.items.filter(item => item.name.trim() && Number(item.quantity) > 0);
+        const allPhotos = [...p.receiptPhotos, ...sessionPhotos];
         const payload = {
           purchasedAt: new Date(session.purchasedAt).toISOString(),
           store: p.store,
           eventId: session.eventId || null,
           providerId: p.providerId || null,
           paymentMethod: p.paymentMethod,
-          notes: p.notes,
-          receiptPhotos: p.receiptPhotos,
+          notes: sessionNotes || p.notes,
+          receiptPhotos: allPhotos,
           items: validItems.map(({ name, quantity, unit, unitPrice }) => ({
             name,
             quantity: Number(quantity),
@@ -368,7 +389,7 @@ export default function NewMarketPurchase() {
         <div className="space-y-2">
           <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Nueva compra</Badge>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Registrar Compras de Mercado</h1>
-          <p className="text-muted-foreground">Carga varias compras a distintos proveedores en una sola sesion.</p>
+          <p className="text-muted-foreground">Carga varias compras a distintos proveedores en una sola sesión.</p>
         </div>
         <Button variant="ghost" onClick={() => navigate('/weekly-expenses')} className="w-full sm:w-auto">
           <ArrowLeft className="size-4" />
@@ -376,32 +397,101 @@ export default function NewMarketPurchase() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-[1.5fr_1fr] gap-6 items-start lg:grid-cols-1">
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_2fr] items-start">
+        {/* Left Panel: Session metadata + Save button */}
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Calendar className="size-4.5 text-accent" />
-                Sesion de compras
+                Datos de la sesión
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Fecha y hora *">
-                  <Input type="datetime-local" value={session.purchasedAt} onChange={e => setSession({ ...session, purchasedAt: e.target.value })} />
-                </FormField>
-                <FormField label="Asociar a evento">
-                  <Select value={session.eventId} onChange={e => setSession({ ...session, eventId: e.target.value })}>
-                    <option value="">Gasto general</option>
-                    {events.map(event => (
-                      <option key={event.id} value={event.id}>{event.title}</option>
+              <FormField label="Fecha y hora *">
+                <Input
+                  type="datetime-local"
+                  value={session.purchasedAt}
+                  onChange={e => setSession({ ...session, purchasedAt: e.target.value })}
+                />
+              </FormField>
+              <FormField label="Asociar a evento">
+                <Select value={session.eventId} onChange={e => setSession({ ...session, eventId: e.target.value })}>
+                  <option value="">Gasto general</option>
+                  {events.map(event => (
+                    <option key={event.id} value={event.id}>{event.title}</option>
+                  ))}
+                </Select>
+              </FormField>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ReceiptText className="size-4.5 text-accent" />
+                Notas y fotos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField label="Notas generales">
+                <textarea
+                  value={sessionNotes}
+                  onChange={e => setSessionNotes(e.target.value)}
+                  placeholder="Notas opcionales para toda la sesión"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground/40 flex min-h-20 w-full resize-y rounded-md border px-3 py-2 text-sm shadow-xs transition-all duration-200 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                />
+              </FormField>
+
+              <div>
+                <label className="text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+                  Fotos de facturas
+                </label>
+                <label className="mt-1.5 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary p-4 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
+                  <Image className="mb-2 size-5 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Subir fotos</span>
+                  <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imágenes</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleSessionPhotosUpload} />
+                </label>
+                {sessionPhotos.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {sessionPhotos.map((photo, photoIndex) => (
+                      <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border border-border/60 bg-card">
+                        <img src={photo} alt={`Factura ${photoIndex + 1}`} className="h-20 w-full object-cover" />
+                        <Button type="button" variant="destructive" size="icon" className="absolute right-1 top-1 size-6" onClick={() => removeSessionPhoto(photoIndex)} title="Quitar foto">
+                          <Trash2 className="size-3" />
+                        </Button>
+                      </div>
                     ))}
-                  </Select>
-                </FormField>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
+          <Card>
+            <CardContent className="pt-5 space-y-4">
+              <div className="flex items-center justify-between border-t border-dashed border-border pt-1">
+                <span className="text-base font-semibold text-foreground">Total sesión</span>
+                <span className="text-lg font-bold text-foreground">${currency(grandTotal)}</span>
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                <Save className="size-4" /> {isSaving ? 'Guardando...' : `Guardar ${session.purchases.length} compra${session.purchases.length !== 1 ? 's' : ''}`}
+              </Button>
+              {saveError && (
+                <p className="text-center text-sm text-destructive">{saveError.message}</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Panel: Purchase blocks */}
+        <div className="space-y-4">
           {session.purchases.map((purchase, index) => (
             <PurchaseBlock
               key={purchase.localId}
@@ -417,52 +507,6 @@ export default function NewMarketPurchase() {
           <Button variant="outline" onClick={addPurchaseBlock} className="w-full">
             <Plus className="size-4" /> Agregar otra compra
           </Button>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <Card className="sticky top-6 space-y-4">
-            <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ReceiptText className="size-4.5 text-accent" />
-                Resumen de sesion
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Compras ({session.purchases.length})</p>
-                {session.purchases.map((p, i) => {
-                  const sub = p.items.reduce((s, it) => s + itemSubtotal(it), 0);
-                  return (
-                    <div key={p.localId} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 py-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground truncate">#{i + 1} {p.store || 'Sin tienda'}</p>
-                        <p className="text-xs text-muted-foreground">{p.items.length} producto{p.items.length !== 1 ? 's' : ''}</p>
-                      </div>
-                      <span className="text-sm font-medium text-foreground">${currency(sub)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-between border-t border-dashed border-border pt-3">
-                <span className="text-base font-semibold text-foreground">Total sesion</span>
-                <span className="text-lg font-bold text-foreground">${currency(grandTotal)}</span>
-              </div>
-
-              <Button
-                className="w-full"
-                onClick={handleSave}
-                disabled={isSaving}
-              >
-                <Save className="size-4" /> {isSaving ? 'Guardando...' : `Guardar ${session.purchases.length} compra${session.purchases.length !== 1 ? 's' : ''}`}
-              </Button>
-              {saveError && (
-                <p className="text-center text-sm text-destructive">
-                  {saveError.message}
-                </p>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
 

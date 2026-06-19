@@ -40,7 +40,7 @@ export async function generateAlerts(user = null) {
           severity: SEVERITY.warn,
           title: `Evento sin confirmar: ${event.title}`,
           message: `Fecha ${event.date} ya vencida y sigue en estado ${event.status}.`,
-          link: `/app/history/${event.id}`,
+          link: `/history/${event.id}`,
           eventId: event.id,
         });
       }
@@ -54,7 +54,7 @@ export async function generateAlerts(user = null) {
           severity: SEVERITY.error,
           title: `Cobro atrasado: ${event.title}`,
           message: `Saldo pendiente $${pending.toFixed(2)} desde ${event.date}.`,
-          link: `/app/history/${event.id}`,
+          link: `/history/${event.id}`,
           eventId: event.id,
         });
       }
@@ -69,7 +69,7 @@ export async function generateAlerts(user = null) {
         severity: SEVERITY.warn,
         title: `Stock bajo: ${item.name}`,
         message: `Stock actual ${item.stock} ${item.unit}, minimo ${item.minStock} ${item.unit}.`,
-        link: '/app/inventory',
+        link: '/inventory',
         catalogItemId: item.id,
       });
     }
@@ -86,7 +86,7 @@ export async function generateAlerts(user = null) {
         severity: SEVERITY.error,
         title: `Nota vencida: ${note.title}`,
         message: `Vencio el ${note.dueDate}.`,
-        link: '/app/notes',
+        link: '/notes',
         noteId: note.id,
       });
     } else if (note.dueDate === today) {
@@ -95,7 +95,7 @@ export async function generateAlerts(user = null) {
         severity: SEVERITY.info,
         title: `Nota para hoy: ${note.title}`,
         message: `Vence hoy.`,
-        link: '/app/notes',
+        link: '/notes',
         noteId: note.id,
       });
     }
@@ -116,7 +116,7 @@ export async function generateAlerts(user = null) {
         severity: SEVERITY.warn,
         title: `Tarea atrasada: ${task.title}`,
         message: `Pendiente en evento ${task.event.title}.`,
-        link: `/app/history/${task.eventId}`,
+        link: `/history/${task.eventId}`,
         eventId: task.eventId,
       });
     }

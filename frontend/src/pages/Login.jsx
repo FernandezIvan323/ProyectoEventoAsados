@@ -70,10 +70,10 @@ export default function Login({ onAuthSuccess }) {
           App familiar compartida: todos los usuarios ven y editan los mismos eventos, notas y compras.
         </p>
         <div className="text-center mt-6 pt-4 border-t border-border">
-          <a href="/landing/" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border bg-card/50 hover:bg-[var(--surface2)] text-muted-foreground hover:text-foreground text-xs font-medium transition-all duration-200 hover:border-[var(--border2)]">
+          <Link to="/" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border bg-card/50 hover:bg-[var(--surface2)] text-muted-foreground hover:text-foreground text-xs font-medium transition-all duration-200 hover:border-[var(--border2)]">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             Volver al inicio
-          </a>
+          </Link>
         </div>
       </div>
     </div>

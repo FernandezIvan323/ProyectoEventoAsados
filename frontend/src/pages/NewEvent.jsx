@@ -226,22 +226,24 @@ export default function NewEvent() {
                   </FormField>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField label="Contratante / Cliente">
-                      <Input
-                        value={clientName}
-                        onChange={e => {
-                          setClientName(e.target.value);
-                          setClientId('');
-                        }}
-                        onSelect={e => {
-                          const selected = clients.find(c => c.name === e.target.value);
-                          if (selected) setClientId(selected.id);
-                        }}
-                        placeholder="Nombre del cliente"
-                        list="client-list"
-                      />
-                      <datalist id="client-list">
-                        {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
-                      </datalist>
+                      <div>
+                        <Input
+                          value={clientName}
+                          onChange={e => {
+                            setClientName(e.target.value);
+                            setClientId('');
+                          }}
+                          onSelect={e => {
+                            const selected = clients.find(c => c.name === e.target.value);
+                            if (selected) setClientId(selected.id);
+                          }}
+                          placeholder="Nombre del cliente"
+                          list="client-list"
+                        />
+                        <datalist id="client-list">
+                          {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
+                        </datalist>
+                      </div>
                     </FormField>
                     <FormField label="Lugar del Evento">
                       <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Ej. Salón Principal" />

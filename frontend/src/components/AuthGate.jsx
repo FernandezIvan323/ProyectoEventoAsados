@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LoadingState } from '@/components/feedback/ResourceState';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
+import Landing from '@/pages/Landing';
 import { clearStoredToken, getStoredToken } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
@@ -48,6 +49,7 @@ export default function AuthGate({ children }) {
 
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login onAuthSuccess={handleAuth} />} />
       <Route path="/register" element={<Register onAuthSuccess={handleAuth} />} />
       <Route path="*" element={<Navigate to={hasUsers ? '/login' : '/register'} replace />} />

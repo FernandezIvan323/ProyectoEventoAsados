@@ -2,10 +2,10 @@ import { Children, cloneElement } from 'react';
 import { cn } from '@/lib/utils';
 
 function FormField({ label, error, hint, required, children, className, labelClassName, errorClassName, ...props }) {
-  const child = Children.only(children);
-  const enhanced = error
-    ? cloneElement(child, { 'aria-invalid': true, 'data-invalid': true })
-    : child;
+  const enhanced = Children.map(children, child => {
+    if (!child || !error) return child;
+    return cloneElement(child, { 'aria-invalid': true, 'data-invalid': true });
+  });
 
   return (
     <div className={cn('space-y-1.5', className)} {...props}>

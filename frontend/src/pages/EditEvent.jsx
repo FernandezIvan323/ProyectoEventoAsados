@@ -186,18 +186,20 @@ export default function EditEvent() {
               </FormField>
               <div className="grid grid-cols-2 gap-4">
                 <FormField label="Cliente">
-                  <Input
-                    value={clientName}
-                    onChange={e => { setClientName(e.target.value); setClientId(''); }}
-                    onSelect={e => {
-                      const selected = clients.find(c => c.name === e.target.value);
-                      if (selected) setClientId(selected.id);
-                    }}
-                    list="edit-client-list"
-                  />
-                  <datalist id="edit-client-list">
-                    {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
-                  </datalist>
+                  <div>
+                    <Input
+                      value={clientName}
+                      onChange={e => { setClientName(e.target.value); setClientId(''); }}
+                      onSelect={e => {
+                        const selected = clients.find(c => c.name === e.target.value);
+                        if (selected) setClientId(selected.id);
+                      }}
+                      list="edit-client-list"
+                    />
+                    <datalist id="edit-client-list">
+                      {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
+                    </datalist>
+                  </div>
                 </FormField>
                 <FormField label="Lugar">
                   <Input value={location} onChange={e => setLocation(e.target.value)} />

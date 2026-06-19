@@ -58,9 +58,12 @@ export default defineConfig({
   },
   server: {
     host: true,
-    watch: {
-      usePolling: true,
-      ignored: ['**/OneDrive/**', '**/Documents/**', '**/node_modules/.vite/**'],
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   optimizeDeps: {
